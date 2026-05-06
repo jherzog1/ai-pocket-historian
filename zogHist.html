@@ -689,11 +689,11 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
   #btnToolbarSave { display: none !important; }
   /* Item edit modal — give breathing room on phones */
   @media (max-width: 520px) {
-    #itemEditModal { align-items:center;padding:3% }
+    #itemEditModal { align-items:center;padding:10% }
     #itemEditModal .modal {
-      width:94% !important;
-      height:94dvh !important;
-      max-height:94dvh !important;
+      width:80% !important;
+      height:80dvh !important;
+      max-height:80dvh !important;
       border-radius:6px !important;
       margin:0 auto !important;
     }
@@ -1854,7 +1854,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
                     border-color:var(--gr);color:var(--gr)"
                     onclick="event.stopPropagation();document.getElementById('fiCamera').click()">📷 Camera</button>
             <button class="btn btn-s" style="min-height:36px;touch-action:manipulation;
-                    border-color:var(--bl);color:var(--bl)"
+                    border-color:var(--bl);color:var(--bl);display:none"
                     onclick="event.stopPropagation();document.getElementById('fiJsonLd').click()"
                     title="Import Schema.org JSON-LD — creates one item per node type">📄 JSON-LD</button>
           </div>
@@ -2408,6 +2408,21 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
         <div id="iemMobileThumb" style="display:none">
           <img id="iemMobileImg" src="" alt="" style="display:none">
         </div>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
+            <div style="font-family:monospace;font-size:14px;color:var(--aml);
+                 text-transform:uppercase;letter-spacing:.07em">Text</div>
+            <div style="font-family:monospace;font-size:12px;color:var(--txf);line-height:1.4">
+              💡 <span style="color:var(--bl)">Chrome/Edge:</span> right-click image → <em>Copy text from image</em> — then paste here. Free, no API needed.
+            </div>
+          </div>
+          <textarea class="qfield-input" id="iemText" rows="6"
+                    style="resize:vertical;overflow-y:auto;padding:6px 8px;line-height:1.65;
+                           font-family:monospace;font-size:17px;width:100%;
+                           box-sizing:border-box"
+                    placeholder="Extracted text…"
+                    oninput="itemEditChange()"></textarea>
+        </div>
         <div class="qfield-row">
           <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Caption</div>
           <textarea class="qfield-input" id="iemCaption" rows="2"
@@ -2438,21 +2453,6 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
           <input type="text" class="qfield-input" id="iemPage"
                  placeholder="Page / Section"
                  oninput="itemEditChange()">
-        </div>
-        <div>
-          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
-            <div style="font-family:monospace;font-size:14px;color:var(--aml);
-                 text-transform:uppercase;letter-spacing:.07em">Text</div>
-            <div style="font-family:monospace;font-size:12px;color:var(--txf);line-height:1.4">
-              💡 <span style="color:var(--bl)">Chrome/Edge:</span> right-click image → <em>Copy text from image</em> — then paste here. Free, no API needed.
-            </div>
-          </div>
-          <textarea class="qfield-input" id="iemText" rows="6"
-                    style="resize:vertical;overflow-y:auto;padding:6px 8px;line-height:1.65;
-                           font-family:monospace;font-size:17px;width:100%;
-                           box-sizing:border-box"
-                    placeholder="Extracted text…"
-                    oninput="itemEditChange()"></textarea>
         </div>
       </div>
     </div>
@@ -8020,6 +8020,8 @@ function removeExtractedImage(i) {
     enableExtractBtn();
   };
   document.getElementById('deleteConfirmModal').classList.add('open');
+  // Focus Delete button so user can press Enter to confirm quickly
+  setTimeout(() => { const b = document.getElementById('deleteConfirmBtn'); if (b) b.focus(); }, 50);
 }
 
 // Run OCR on a specific item and populate a text field with the result
@@ -12742,6 +12744,7 @@ function deleteSavedRecord(id) {
     setStatus('ok', `Record deleted · ${S.records.length} remaining`);
   };
   document.getElementById('deleteConfirmModal').classList.add('open');
+  setTimeout(() => { const b = document.getElementById('deleteConfirmBtn'); if (b) b.focus(); }, 50);
 }
 
 function syncGenerateIframe() {
@@ -15284,4 +15287,3 @@ document.getElementById('fiJson').addEventListener('change', async function() {
 </body>
 </html
 
->
