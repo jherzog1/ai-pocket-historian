@@ -588,7 +588,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
 /* queue item citation fields */
 .qfields{margin-top:7px;display:flex;flex-direction:column;gap:5px;width:100%;box-sizing:border-box}
 .qfield-row{display:flex;flex-direction:column;gap:2px;width:100%}
-.qfield-lbl{font-size:23px;font-weight:500;
+.qfield-lbl{font-size:13px;font-weight:500;
   color:#000;text-transform:uppercase;letter-spacing:.06em}
 .qfield-input{width:100%;background:var(--s3);border:1px solid var(--bd);
   color:var(--tx);font-family:'IBM Plex Sans',sans-serif;
@@ -861,6 +861,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
                 onclick="toggleToolbarOverflow()"
                 style="cursor:pointer;font-size:18px;font-weight:900;
                        padding:2px 10px;border-radius:4px;line-height:1.5;
+                       touch-action:manipulation;
                        background:linear-gradient(135deg,#f5e07a 0%,#c8a832 45%,#f5e07a 70%,#a07820 100%);
                        color:#3a2800;border:none;
                        box-shadow:0 1px 5px rgba(200,168,50,.5), inset 0 1px 0 rgba(255,255,255,.45);
@@ -6837,15 +6838,40 @@ function toggleToolbarOverflow() {
     menu.style.display = 'none';
     return;
   }
-  // Position below the button using fixed coords
+
+  // Reset positioning before calculating
+  menu.style.top   = '';
+  menu.style.right = '';
+  menu.style.left  = '';
+  menu.style.bottom = '';
+  menu.style.maxHeight = (window.innerHeight * 0.75) + 'px';
+  menu.style.overflowY = 'auto';
+
   if (btn) {
     const r = btn.getBoundingClientRect();
-    menu.style.top  = (r.bottom + 4) + 'px';
-    menu.style.right = (window.innerWidth - r.right) + 'px';
+    const menuW = 240;
+    let top   = r.bottom + 4;
+    let right  = window.innerWidth - r.right;
+
+    // Safety: clamp to viewport
+    if (right < 4) right = 4;
+    if (top + 200 > window.innerHeight) top = Math.max(4, r.top - 200);
+
+    menu.style.top   = top + 'px';
+    menu.style.right = right + 'px';
+    menu.style.left  = 'auto';
+  } else {
+    // Fallback: top right corner
+    menu.style.top   = '60px';
+    menu.style.right = '8px';
+    menu.style.left  = 'auto';
   }
+
   menu.style.display = 'block';
-  // Close when clicking outside
-  setTimeout(() => document.addEventListener('click', closeToolbarOverflow, { once: true }), 10);
+
+  // Close when tapping/clicking outside
+  const delay = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 300 : 10;
+  setTimeout(() => document.addEventListener('click', closeToolbarOverflow, { once: true }), delay);
 }
 
 function closeToolbarOverflow() {
@@ -15624,7 +15650,6 @@ document.getElementById('fiJson').addEventListener('change', async function() {
   💾 Save Record
 </button>
 
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"05ff1ebed0704b098c337f2426b7e55c","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
 
