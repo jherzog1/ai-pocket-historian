@@ -1,6 +1,6 @@
 # AI Pocket Historian
 A free, open-source AI-powered tool for digitizing and analyzing 
-historical newspapers and genealogical records.
+historical and genealogical records.
 
 ## Download
 Download `zogHist.html` and open it in Chrome or Edge. No installation required.
