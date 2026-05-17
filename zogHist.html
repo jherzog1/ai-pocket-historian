@@ -591,7 +591,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
 .qfield-lbl{font-size:13px;font-weight:500;
   color:#000;text-transform:uppercase;letter-spacing:.06em}
 .qfield-input{width:100%;background:var(--s3);border:1px solid var(--bd);
-  color:var(--tx);font-family:'IBM Plex Sans',sans-serif;
+  color:var(--tx);font-family:inherit;font-size:small;
   padding:4px 8px;border-radius:2px;outline:none;transition:.15s;min-width:0;box-sizing:border-box}
 .qfield-input:focus{border-color:var(--bl);background:var(--s2)}
 .qfield-input::placeholder{color:rgba(180,200,220,.38)}
@@ -635,6 +635,11 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
 .mrow{display:flex;gap:7px;justify-content:flex-end}
 
 ::-webkit-scrollbar{width:8px;height:8px}
+#iemImgScroll::-webkit-scrollbar { width:10px; }
+#iemImgScroll::-webkit-scrollbar-track { background:var(--s3); }
+#iemImgScroll::-webkit-scrollbar-thumb { background:var(--bd2);border-radius:4px; }
+#iemImgScroll::-webkit-scrollbar-thumb:hover { background:var(--am); }
+#iemImgScroll { scrollbar-width:thin; scrollbar-color:var(--bd2) var(--s3); overflow-y:scroll !important; }
 ::-webkit-scrollbar-track{background:var(--s2)}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:var(--am)}
@@ -1009,7 +1014,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
     <!-- RIGHT PANEL — now full width -->
     <div id="right">
       <!-- Toolbar / overflow menu -->
-      <div style="display:flex;gap:4px;padding:4px 8px;flex-shrink:0;background:var(--s1);align-items:center">
+      <div id="toolbarRow" style="display:flex;gap:4px;padding:0 8px;flex-shrink:0;background:var(--s1);align-items:center;min-height:0">
         <div style="flex:1"></div>
         <!-- Combined Analysis — visible when 2+ records open -->
         <button id="btnCombinedAnalysis"
@@ -1104,6 +1109,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
                               font-size:14px;min-height:32px;
                               padding:2px 26px 2px 8px;border-radius:2px;outline:none;width:100%;box-sizing:border-box"
                        oninput="searchItems(this.value);document.getElementById('itemSearchClear').style.display=this.value?'flex':'none'"
+                       onkeydown="if(event.key==='Enter'&&_searchFirstMatch){_searchFirstMatch.scrollIntoView({behavior:'smooth',block:'center'});}"
                        onfocus="this.style.borderColor='var(--bl)'"
                        onblur="this.style.borderColor='var(--bd)'">
                 <button id="itemSearchClear"
@@ -1181,7 +1187,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
           <div id="historicalAccountSection"><div id="historicalAccountText"></div></div>
           <div id="eventsSection"><div id="eventsList"></div></div>
           <div id="profilesSection"><div id="profilesList"></div></div>
-          <div id="personsSection"><div id="personsList"></div></div>
+          <div id="personsSection" style="display:none"><div id="personsList"></div></div>
           <div id="publisherSection"><div id="publisherList"></div></div>
           <div id="timelineSection"><div id="timelineList"></div></div>
           <div id="jsonldOutHeader"></div>
@@ -1278,10 +1284,19 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
           </div>
         </div>
 
-        <div class="bbar">
+        <div class="bbar" style="gap:6px;flex-wrap:nowrap">
           <span id="queryContextBadge" style="font-size:14px;
-                color:var(--txf);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
-                white-space:nowrap">No records loaded</span>
+                color:var(--txf);white-space:nowrap;flex-shrink:0">No records loaded</span>
+          <!-- Context gauge -->
+          <div id="queryContextGauge" style="flex:1;min-width:40px;max-width:140px;display:none;
+                                            align-items:center;gap:4px;overflow:hidden">
+            <div style="flex:1;height:5px;background:var(--bd);border-radius:3px;overflow:hidden;min-width:0">
+              <div id="queryGaugeFill" style="height:100%;width:0%;border-radius:3px;
+                                              background:var(--gr);transition:width .4s ease"></div>
+            </div>
+            <span id="queryGaugeLabel" style="font-size:11px;color:var(--txf);
+                  white-space:nowrap;flex-shrink:0">0K</span>
+          </div>
           <button class="btn btn-ok save-record-btn" style="font-size:15px;padding:3px 10px;
                   white-space:nowrap;display:none" onclick="confirmSave()">💾 Save Record</button>
           <button class="btn btn-p" style="font-size:15px;padding:3px 12px;white-space:nowrap"
@@ -1555,11 +1570,14 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
               onclick="wizNav(-1)">◀ Prev</button>
       <button class="btn btn-g" id="wizNext" style="font-size:15px;padding:3px 10px"
               onclick="wizNav(1)">Next ▶</button>
-      <button class="btn" style="font-size:15px;padding:3px 10px;border-color:var(--am);
+      <button class="btn" style="display:none;font-size:15px;padding:3px 10px;border-color:var(--am);
               color:var(--am);background:rgba(230,200,74,.07)"
               onclick="closeConflictWizard(); doConflictsScan()">⚡ Re-run</button>
       <div style="flex:1;min-width:4px"></div>
-      <button class="btn btn-g" style="font-size:15px;padding:3px 10px"
+      <button class="btn" id="wizResolveBtn" style="font-size:15px;padding:3px 10px;
+              border-color:var(--gr);color:var(--gr);background:rgba(61,186,114,.07)"
+              onclick="wizResolveConflict()">✔ Resolve</button>
+      <button class="btn btn-g" id="wizSkipBtn" style="font-size:15px;padding:3px 10px"
               onclick="wizSkip()">Skip →</button>
       <button class="btn btn-p" id="wizApply" style="font-size:15px;padding:3px 10px"
               onclick="wizApply()" disabled>✓ Apply</button>
@@ -1906,7 +1924,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
              style="width:100%;min-height:160px;display:flex;flex-direction:column;
                     align-items:center;justify-content:center;gap:12px;
                     border:2px dashed var(--bd2);border-radius:8px;cursor:pointer;transition:.2s">
-          <p style="font-family:monospace;font-size:17px;color:var(--txd);
+          <p style="font-size:small;color:var(--txd);
                     text-align:center;line-height:1.7;padding:0 12px;margin:0">
             Drop image(s) here or use a button below
           </p>
@@ -1945,37 +1963,36 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
       <div id="pendingMeta" style="display:none;border-top:1px solid var(--bd);
            background:var(--s2);padding:12px 12px 16px;flex-direction:column;gap:8px;
            flex-shrink:0">
-        <div style="font-family:monospace;font-size:14px;color:var(--aml);
+        <div style="font-size:11px;color:var(--aml);
              text-transform:uppercase;letter-spacing:.07em">Item Details</div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Caption</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Caption</div>
           <textarea id="pmCaption" class="qfield-input" placeholder="Describe this image…" rows="2"
                     style="resize:vertical;word-wrap:break-word;white-space:pre-wrap;
                            line-height:1.5;padding:4px 8px;width:100%;box-sizing:border-box;
-                           font-size:22px"
-                    oninput="if(!S._sourceImageMeta)S._sourceImageMeta={};S._sourceImageMeta.caption=this.value;this.rows=Math.max(2,Math.ceil(this.value.length/60))"></textarea>
+"                    oninput="if(!S._sourceImageMeta)S._sourceImageMeta={};S._sourceImageMeta.caption=this.value;this.rows=Math.max(2,Math.ceil(this.value.length/60))"></textarea>
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Source</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Source</div>
           <input type="text" id="pmSource" class="qfield-input" placeholder="Publication name…"
                  style="font-size:22px"
                  oninput="if(!S._sourceImageMeta)S._sourceImageMeta={};S._sourceImageMeta.citSource=this.value;debouncePmSourceParse()"
                  onblur="pmSourceParse()">
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Publisher</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Publisher</div>
           <input type="text" id="pmPublisher" class="qfield-input" placeholder="Publisher / author…"
                  style="font-size:22px"
                  oninput="if(!S._sourceImageMeta)S._sourceImageMeta={};S._sourceImageMeta.citPublisher=this.value">
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Date / Time</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Date / Time</div>
           <input type="text" id="pmDate" class="qfield-input" placeholder="Date / Time"
                  style="font-size:22px"
                  oninput="if(!S._sourceImageMeta)S._sourceImageMeta={};S._sourceImageMeta.citDate=this.value">
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Page / Section</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Page / Section</div>
           <input type="text" id="pmPage" class="qfield-input" placeholder="Page / Section"
                  style="font-size:22px"
                  oninput="if(!S._sourceImageMeta)S._sourceImageMeta={};S._sourceImageMeta.citPage=this.value">
@@ -1984,7 +2001,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
           <label class="qfield-lbl" style="margin-bottom:2px">Text</label>
           <textarea id="pmText" class="qfield-input" placeholder="Paste text for this image here…"
                     rows="3"
-                    style="resize:vertical;font-family:monospace;font-size:20px;
+                    style="resize:vertical;font-size:small;
                            line-height:1.65;padding:6px 8px;width:100%;box-sizing:border-box"
                     oninput="if(!S._sourceImageMeta)S._sourceImageMeta={};S._sourceImageMeta.extractedText=this.value"></textarea>
         </div>
@@ -2003,7 +2020,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
       <h3 style="margin:0;flex:1;font-family:'Playfair Display',serif;font-size:21px">New Record</h3>
     </div>
     <div style="padding:20px 22px">
-      <label style="font-family:monospace;font-size:14px;text-transform:uppercase;
+      <label style="font-size:11px;text-transform:uppercase;
                     letter-spacing:.08em;color:var(--aml);display:block;margin-bottom:8px">
         Record Title
       </label>
@@ -2393,12 +2410,20 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
 
 <!-- ITEM EDIT MODAL -->
 <div class="mbg" id="itemEditModal" style="align-items:center;padding:2% 0">
-  <div class="modal" style="max-width:720px;width:100%;max-height:96dvh;
+  <div class="modal" id="iemModalInner" style="max-width:95vw;width:720px;max-height:96dvh;
        display:flex;flex-direction:column;padding:0;overflow:hidden;
-       margin:0 auto;border-radius:10px">
-    <!-- Header -->
+       margin:0 auto;border-radius:10px;position:relative;min-width:320px">
+
+    <!-- Resize handle -->
+    <div id="iemResizeHandle"
+         style="position:absolute;top:0;right:0;width:8px;height:100%;cursor:ew-resize;z-index:20;
+                background:linear-gradient(to right,transparent 2px,var(--bd) 2px,var(--bd) 3px,transparent 3px);
+                opacity:.5;transition:opacity .15s;border-radius:0 10px 10px 0"
+         onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='.5'"></div>
+
+    <!-- Header — always full width -->
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-                flex-shrink:0;background:var(--s1)">
+                flex-shrink:0;background:var(--s1);border-radius:10px 10px 0 0">
       <span id="itemEditTitle" style="font-family:monospace;font-size:17px;
             font-weight:700;color:var(--aml);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
       <button id="iemOcrBtn" class="btn btn-s" style="font-size:12px;padding:2px 8px;min-height:24px;
@@ -2408,124 +2433,92 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
                      color:var(--tx);border-radius:3px;cursor:pointer;font-size:17px;flex-shrink:0"
               onclick="closeItemEditModal()">✕ Close</button>
     </div>
-    <!-- Body — single scrollable column: image full width, fields below -->
-    <div id="itemEditBody" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;min-height:0">
-      <!-- Image panel with zoom/pan -->
-      <div id="itemEditImgPanel"
-           style="width:100%;flex-shrink:0;background:#080d14;
-                  box-sizing:border-box;position:relative;overflow:hidden">
-        <!-- Zoom controls -->
-        <div style="position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:4px;align-items:center">
-          <button onclick="event.stopPropagation();iemZoom(-0.25)" title="Zoom out"
-                  style="background:rgba(13,17,23,.85);border:1px solid var(--bd);color:var(--am);
-                         font-size:18px;width:32px;height:32px;border-radius:4px;cursor:pointer;
-                         display:flex;align-items:center;justify-content:center;line-height:1;
-                         touch-action:manipulation">−</button>
-          <span id="iemZoomLabel"
-                style="font-family:monospace;font-size:12px;color:var(--txf);
-                       background:rgba(13,17,23,.85);border:1px solid var(--bd);
-                       padding:2px 7px;border-radius:4px;min-width:44px;text-align:center">100%</span>
-          <button onclick="event.stopPropagation();iemZoom(0.25)" title="Zoom in"
-                  style="background:rgba(13,17,23,.85);border:1px solid var(--bd);color:var(--am);
-                         font-size:18px;width:32px;height:32px;border-radius:4px;cursor:pointer;
-                         display:flex;align-items:center;justify-content:center;line-height:1;
-                         touch-action:manipulation">+</button>
-          <button onclick="event.stopPropagation();iemZoomReset()" title="Reset zoom"
-                  style="background:rgba(13,17,23,.85);border:1px solid var(--bd);color:var(--txf);
-                         font-size:11px;height:32px;padding:0 8px;border-radius:4px;cursor:pointer;
-                         font-family:monospace;touch-action:manipulation">⊞ Fit</button>
+
+    <!-- Body — flex-row in wide mode (≥900px), flex-column in narrow -->
+    <div id="itemEditBody" style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">
+
+      <!-- LEFT col: image panel -->
+      <div id="iemLeftCol" style="display:flex;flex-direction:column;flex-shrink:0;overflow:hidden">
+        <div id="itemEditImgPanel"
+             style="width:100%;flex:1;background:#080d14;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden">
+          <!-- Zoom bar hidden — image displays at natural size, scroll to pan -->
+          <div id="iemZoomBar" style="display:none"></div>
+          <!-- Scrollable image area — native scroll only, no drag/zoom -->
+          <div id="iemImgScroll"
+               style="width:100%;flex:1;overflow:auto;background:#080d14;
+                      -webkit-overflow-scrolling:touch;box-sizing:border-box;cursor:default">
+            <div id="iemImgWrapper"
+                 style="display:flex;align-items:flex-start;justify-content:center;
+                        min-width:100%;padding:10px;box-sizing:border-box">
+              <img id="itemEditImg" src="" alt=""
+                   style="display:block;width:auto;height:auto;
+                          border:1px solid var(--bd2);box-shadow:0 4px 20px rgba(0,0,0,.6);
+                          border-radius:2px">
+            </div>
+          </div>
         </div>
-        <!-- Scrollable/pannable image container -->
-        <div id="iemImgScroll"
-             style="width:100%;height:30dvh;max-height:46vh;overflow:auto;
-                    position:relative;background:#080d14;
-                    -webkit-overflow-scrolling:touch;box-sizing:border-box;cursor:default"
-             onmousedown="iemPanStart(event)"
-             ontouchstart="iemTouchStart(event)"
-             ontouchmove="iemTouchMove(event)"
-             ontouchend="iemTouchEnd(event)"
-             onwheel="iemWheelZoom(event)">
-          <!-- iemImgWrapper centers image both axes -->
-          <div id="iemImgWrapper"
-               style="display:flex;align-items:center;justify-content:center;
-                      min-width:100%;min-height:100%;padding:10px;box-sizing:border-box">
-            <img id="itemEditImg" src="" alt=""
-                 style="max-width:calc(100% - 20px);max-height:calc(46vh - 20px);
-                        width:auto;height:auto;object-fit:contain;display:block;
-                        transform-origin:top left;
-                        border:1px solid var(--bd2);
-                        box-shadow:0 4px 20px rgba(0,0,0,.6);border-radius:2px;
-                        touch-action:pan-x pan-y"
-                 ondragstart="return false">
+        <div id="itemEditTextPanel"
+             style="width:100%;flex-shrink:0;background:var(--s3);padding:12px;font-size:small;
+                    color:var(--txd);line-height:1.65;white-space:pre-wrap;word-break:break-word"></div>
+      </div>
+
+      <!-- RIGHT col: metadata fields -->
+      <div id="iemRightCol" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+                                   display:flex;flex-direction:column;min-height:0">
+        <div id="itemEditFields"
+             style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--s2)">
+          <div id="iemMobileThumb" style="display:none"><img id="iemMobileImg" src="" alt="" style="display:none"></div>
+          <table class="iem-meta-table" style="width:100%;border-collapse:collapse;margin-top:4px">
+            <tr>
+              <td style="width:22%;padding:4px 8px 4px 0;vertical-align:top;padding-top:8px;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Caption</td>
+              <td style="padding:3px 0">
+                <textarea id="iemCaption" class="qfield-input" rows="1"
+                          style="width:100%;box-sizing:border-box;resize:none;overflow:hidden;line-height:1.5;padding:4px 8px"
+                          placeholder="Caption…"
+                          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';itemEditChange()"></textarea>
+              </td>
+            </tr>
+            <tr>
+              <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Source</td>
+              <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemSource" placeholder="Publication name…" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
+            </tr>
+            <tr>
+              <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Publisher</td>
+              <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemPublisher" placeholder="Publisher / author…" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
+            </tr>
+            <tr>
+              <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Date / Time</td>
+              <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemDate" placeholder="Date / Time" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
+            </tr>
+            <tr>
+              <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Page / Section</td>
+              <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemPage" placeholder="Page / Section" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
+            </tr>
+          </table>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em">Text</div>
+              <button id="iemTextExpandBtn" onclick="iemToggleTextExpand()" title="Expand text editor"
+                      style="background:none;border:1px solid var(--bd);border-radius:3px;padding:1px 5px;
+                             font-size:11px;color:var(--txf);cursor:pointer;line-height:1.4;transition:color .15s,border-color .15s"
+                      onmouseover="this.style.color='var(--am)';this.style.borderColor='var(--am)'"
+                      onmouseout="this.style.color='var(--txf)';this.style.borderColor='var(--bd)'">⤢ Expand</button>
+            </div>
+            <textarea class="qfield-input" id="iemText" rows="6"
+                      style="resize:vertical;overflow-y:auto;padding:6px 8px;line-height:1.65;
+                             width:100%;box-sizing:border-box;transition:height .2s ease"
+                      placeholder="Extracted text…" oninput="itemEditChange()"></textarea>
           </div>
         </div>
       </div>
-      <!-- Text-only panel -->
-      <div id="itemEditTextPanel"
-           style="width:100%;flex-shrink:0;
-                  background:var(--s3);padding:12px;font-family:monospace;font-size:17px;color:var(--txd);
-                  line-height:1.65;white-space:pre-wrap;word-break:break-word">
-      </div>
-      <!-- Fields panel — expands to fill remaining scroll space -->
-      <div id="itemEditFields"
-           style="flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--s2)">
-        <!-- Mobile thumb hidden — image is always shown above -->
-        <div id="iemMobileThumb" style="display:none">
-          <img id="iemMobileImg" src="" alt="" style="display:none">
-        </div>
-        <table class="iem-meta-table" style="width:100%;border-collapse:collapse;margin-top:4px">
-          <tr>
-            <td style="width:22%;padding:4px 8px 4px 0;vertical-align:top;padding-top:8px;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Caption</td>
-            <td style="padding:3px 0">
-              <textarea id="iemCaption" class="qfield-input"
-                        rows="1"
-                        style="width:100%;box-sizing:border-box;resize:none;overflow:hidden;line-height:1.5;padding:4px 8px"
-                        placeholder="Caption…"
-                        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';itemEditChange()"></textarea>
-            </td>
-          </tr>
-          <tr>
-            <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Source</td>
-            <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemSource" placeholder="Publication name…" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
-          </tr>
-          <tr>
-            <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Publisher</td>
-            <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemPublisher" placeholder="Publisher / author…" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
-          </tr>
-          <tr>
-            <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Date / Time</td>
-            <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemDate" placeholder="Date / Time" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
-          </tr>
-          <tr>
-            <td style="width:22%;padding:4px 8px 4px 0;vertical-align:middle;font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Page / Section</td>
-            <td style="padding:3px 0"><input type="text" class="qfield-input" id="iemPage" placeholder="Page / Section" oninput="itemEditChange()" style="width:100%;box-sizing:border-box"></td>
-          </tr>
-        </table>
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <div style="font-size:11px;color:var(--aml);
-                 text-transform:uppercase;letter-spacing:.07em">Text</div>
-            <button id="iemTextExpandBtn" onclick="iemToggleTextExpand()"
-                    title="Expand text editor"
-                    style="background:none;border:1px solid var(--bd);border-radius:3px;
-                           padding:1px 5px;font-size:11px;color:var(--txf);cursor:pointer;
-                           line-height:1.4;transition:color .15s,border-color .15s"
-                    onmouseover="this.style.color='var(--am)';this.style.borderColor='var(--am)'"
-                    onmouseout="this.style.color='var(--txf)';this.style.borderColor='var(--bd)'">⤢ Expand</button>
-          </div>
-          <textarea class="qfield-input" id="iemText" rows="6"
-                    style="resize:vertical;overflow-y:auto;padding:6px 8px;line-height:1.65;
-                           font-family:monospace;font-size:17px;width:100%;
-                           box-sizing:border-box;transition:height .2s ease"
-                    placeholder="Extracted text…"
-                    oninput="itemEditChange()"></textarea>
-        </div>
-      </div>
-    </div>
-    <!-- Footer — always sticky at bottom -->
+
+    </div><!-- /itemEditBody -->
+
+    <!-- Footer — always full width -->
     <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;
                 border-top:1px solid var(--bd);flex-shrink:0;background:var(--s1);
-                flex-wrap:wrap;padding-bottom:calc(10px + env(safe-area-inset-bottom))">
+                flex-wrap:wrap;border-radius:0 0 10px 10px;
+                padding-bottom:calc(10px + env(safe-area-inset-bottom))">
       <button class="btn btn-d" style="font-size:12px;padding:2px 8px;color:var(--rd)"
               onclick="removeExtractedImage(_itemEditIdx)">× Delete</button>
       <div style="flex:1"></div>
@@ -2579,27 +2572,27 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
         <div style="font-family:monospace;font-size:15px;color:var(--aml);
              text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px">Item Details</div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Caption</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Caption</div>
           <textarea id="tpCaption" class="qfield-input" placeholder="Describe this article…"
                     rows="2"
                     style="resize:vertical;word-wrap:break-word;white-space:pre-wrap;line-height:1.5;padding:4px 8px;width:100%;box-sizing:border-box"
                     oninput="this.rows=Math.min(8,Math.max(2,Math.ceil(this.value.length/60)))"></textarea>
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Source</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Source</div>
           <input type="text" id="tpSource" class="qfield-input" placeholder="Publication name…"
                  oninput="debounceTpSourceParse()" onblur="tpSourceParse()">
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Publisher</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Publisher</div>
           <input type="text" id="tpPublisher" class="qfield-input" placeholder="Publisher / author…">
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Date / Time</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Date / Time</div>
           <input type="text" id="tpDate" class="qfield-input" placeholder="Date / Time">
         </div>
         <div class="qfield-row">
-          <div style="font-family:monospace;font-size:14px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Page / Section</div>
+          <div style="font-size:11px;color:var(--aml);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Page / Section</div>
           <input type="text" id="tpPage" class="qfield-input" placeholder="Page / Section">
         </div>
       </div>
@@ -2839,13 +2832,11 @@ const S = {
   _generalNotes: '',
   _corrections:  '',
   chatSessions:  [], // persisted Q&A sessions: [{ts, pairs:[{q,a}]}] _conflictSummary: '',
-  historicalAccount:  '',
   structuredAnalysis: '',
   tagClusters: null,
   tagDiagram: '',
   timeline: [],
   publisherSummary: [],
-  persons: [],
   profiles: [],
   events: [],
   themes: [],
@@ -3506,7 +3497,7 @@ function refreshSourceTabButtons() {
   // Analysis tab — checkmark if analysis has been run
   const analysisTab = document.getElementById('jsonldTabBtn');
   if (analysisTab) {
-    const hasAnalysis = !!(S.lastGenerateAt || S.jsonLD || S.persons?.length || S.events?.length || S.themes?.length);
+    const hasAnalysis = !!(S.lastGenerateAt || S.events?.length || S.themes?.length);
     const isOnA = analysisTab.classList.contains('on');
     const label = hasAnalysis
       ? `Analysis <span class="src-count" style="display:inline-block;font-size:10px;
@@ -3647,10 +3638,13 @@ function updateDirtyIndicator() {
 
 function setSaveVisible(visible) {
   if (visible && S.extracting) return;
+  const toolbarRow = document.getElementById('toolbarRow');
   if (visible) {
     refreshActionButtons();
+    if (toolbarRow) toolbarRow.style.padding = '4px 8px';
   } else {
     document.querySelectorAll('.save-record-btn').forEach(b => { b.style.display = 'none'; });
+    if (toolbarRow) toolbarRow.style.padding = '0 8px';
     const jsonldTab = document.getElementById('jsonldTabBtn');
     if (jsonldTab && !S.scanning) jsonldTab.disabled = true;
     const conflictsTabEl = document.getElementById('conflictsTabBtn');
@@ -5208,14 +5202,26 @@ function scrollToItem(idx) {
   if (idx === '' || idx === null || idx === undefined) return;
   idx = parseInt(idx);
 
+  const flashItem = el => {
+    if (!el) return;
+    el.style.transition = 'outline .1s';
+    el.style.outline = '3px solid var(--am)';
+    el.style.boxShadow = '0 0 12px rgba(230,200,74,.5)';
+    setTimeout(() => {
+      el.style.outline = '';
+      el.style.boxShadow = '';
+    }, 1600);
+  };
+
   if (_extractLayout === 'gallery') {
-    // Gallery mode — cards are rendered in order by getSortedIndices()
-    // Find the card by its position in the rendered gallery
     const cards = document.querySelectorAll('#imgStrip .ei-gallery-card');
     const sortedIdxs = getSortedIndices();
     const pos = sortedIdxs.indexOf(idx);
     const card = pos >= 0 ? cards[pos] : null;
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => flashItem(card), 400);
+    }
     return;
   }
 
@@ -5223,7 +5229,8 @@ function scrollToItem(idx) {
   const card = document.getElementById('eimg-' + idx);
   if (card) {
     if (!_expandedItems.has(idx)) toggleAccordionItem(idx);
-    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => flashItem(card), 400);
   }
 }
 
@@ -5505,8 +5512,8 @@ function iemTouchMove(e) {
       iemZoom(0); // apply current scale without delta
     }
     _iemPinchDist = newDist;
-  } else if (e.touches.length === 1 && _iemScale > 1 && _iemTouch1) {
-    // Single finger pan when zoomed in
+  } else if (e.touches.length === 1 && _iemTouch1) {
+    // Single finger pan — works at any zoom level
     e.preventDefault();
     const dx = _iemTouch1.x - e.touches[0].clientX;
     const dy = _iemTouch1.y - e.touches[0].clientY;
@@ -5514,7 +5521,6 @@ function iemTouchMove(e) {
     scr.scrollTop  += dy;
     _iemTouch1 = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }
-  // At scale=1, let browser handle native scroll (don't prevent default)
 }
 
 function iemTouchEnd(e) {
@@ -5525,14 +5531,13 @@ function iemTouchEnd(e) {
 
 function iemPanStart(e) {
   const scr = document.getElementById('iemImgScroll');
-  e.stopPropagation(); // prevent mousedown from bubbling to itemEditChange
-  if (!scr || _iemScale <= 1) return;
+  e.stopPropagation();
+  if (!scr) return;
   e.preventDefault();
   let lastX = e.clientX;
   let lastY = e.clientY;
   scr.style.cursor = 'grabbing';
   function onMove(ev) {
-    // Incremental delta — works correctly in Chrome, Edge, and Safari
     scr.scrollLeft += lastX - ev.clientX;
     scr.scrollTop  += lastY - ev.clientY;
     lastX = ev.clientX;
@@ -5547,7 +5552,7 @@ function iemPanStart(e) {
   document.addEventListener('mouseup', onUp);
 }
 
-function openItemEditModal(i) {
+function openItemEditModal(i, opts = {}) {
   // Remember which tab opened this modal so we return to it on close
   const activePane = document.querySelector('.pane.on');
   _itemEditCallerTab = activePane ? activePane.id.replace('pane-', '') : 'extract';
@@ -5555,6 +5560,10 @@ function openItemEditModal(i) {
   _iemTextExpanded = false;
   const expandBtn = document.getElementById('iemTextExpandBtn');
   if (expandBtn) { expandBtn.textContent = '⤢ Expand'; expandBtn.title = 'Expand text editor'; }
+  // Restore saved modal width
+  const _savedW = localStorage.getItem(IEM_WIDTH_KEY);
+  const _iemM   = document.getElementById('iemModalInner');
+  if (_iemM && _savedW) _iemM.style.width = Math.min(window.innerWidth * 0.95, parseInt(_savedW)) + 'px';
   // Ensure image scroll is restored if it was collapsed
   const imgScr = document.getElementById('iemImgScroll');
   if (imgScr) { imgScr.style.height = '30dvh'; imgScr.style.overflow = 'auto'; }
@@ -5643,16 +5652,58 @@ function openItemEditModal(i) {
   }
 
   document.getElementById('itemEditModal').classList.add('open');
+  // Show/hide Delete button based on caller context
+  const iemDeleteBtn = document.querySelector('#itemEditModal .btn-d');
+  if (iemDeleteBtn) iemDeleteBtn.style.display = opts.hideDelete ? 'none' : '';
   // Hide floating save button while modal is open
   const floatBtn2 = document.getElementById('floatSaveBtn');
   if (floatBtn2) floatBtn2.style.display = 'none';
   _itemEditDirty = false;
   _updateItemEditNav();
-  // Recalculate caption textarea height now that the modal is visible
+  // Apply layout and balance heights once modal is visible
   setTimeout(() => {
+    iemApplyLayout();
+    // Recalculate caption textarea
     const cap = document.getElementById('iemCaption');
     if (cap) { cap.style.height = 'auto'; cap.style.height = cap.scrollHeight + 'px'; }
-  }, 30);
+
+    // Balance image pane vs text textarea heights
+    // Image wins: always gets at least 40dvh. Text gets up to 40dvh from what remains.
+    const imgScr = document.getElementById('iemImgScroll');
+    const iemTa  = document.getElementById('iemText');
+    if (imgScr && iemTa && !_iemTextExpanded) {
+      const dvh       = window.innerHeight / 100;
+      const imgMin    = 40 * dvh;
+      const textMax   = 40 * dvh;
+
+      // Measure natural text content height
+      iemTa.style.height = 'auto';
+      const textNatural = iemTa.scrollHeight;
+      const textH = Math.min(textNatural, textMax);
+
+      // Let image container size to the image's natural height,
+      // but never below imgMin
+      imgScr.style.height    = 'auto';
+      imgScr.style.maxHeight = '';
+      imgScr.style.minHeight = imgMin + 'px';
+
+      const imgEl = document.getElementById('itemEditImg');
+      if (imgEl) {
+        // Wait for image to report its rendered height
+        const naturalImgH = imgEl.naturalHeight || 0;
+        const imgElH      = imgEl.clientHeight   || 0;
+        const actualImgH  = Math.max(naturalImgH, imgElH);
+        const imgH        = Math.max(imgMin, actualImgH + 20);
+        imgScr.style.height    = imgH + 'px';
+        imgScr.style.minHeight = imgMin + 'px';
+        imgEl.style.maxHeight  = imgH - 20 + 'px';
+      } else {
+        imgScr.style.height = imgMin + 'px';
+      }
+
+      iemTa.style.height = textH + 'px';
+    }
+  }, 60);
 }
 
 function _updateSkipOcrBtn(skipped) {
@@ -5688,24 +5739,109 @@ function itemEditToggleSkipOcr() {
 }
 
 let _iemTextExpanded = false;
+const IEM_WIDTH_KEY = 'zh_iem_width';
+const IEM_WIDE_BREAKPOINT = 900;
+
+// ── Apply wide/narrow layout based on current modal width ──
+function iemApplyLayout() {
+  const modal = document.getElementById('iemModalInner');
+  const body  = document.getElementById('itemEditBody');
+  const lCol  = document.getElementById('iemLeftCol');
+  const rCol  = document.getElementById('iemRightCol');
+  const imgScr = document.getElementById('iemImgScroll');
+  if (!modal || !body || !lCol || !rCol) return;
+  const w = modal.offsetWidth;
+  if (w >= IEM_WIDE_BREAKPOINT) {
+    // Wide: side-by-side 50/50, each column scrolls independently
+    body.style.flexDirection  = 'row';
+    body.style.overflowY      = 'hidden';
+    lCol.style.width          = '50%';
+    lCol.style.flexShrink     = '0';
+    lCol.style.height         = '100%';
+    lCol.style.overflowY      = 'auto';
+    lCol.style.borderRight    = '1px solid var(--bd)';
+    rCol.style.width          = '50%';
+    rCol.style.flexShrink     = '0';
+    rCol.style.overflowY      = 'auto';
+    rCol.style.flex           = '';
+    // Image fills left column
+    if (imgScr) { imgScr.style.height = ''; imgScr.style.minHeight = ''; }
+  } else {
+    // Narrow: single scrollable column — body scrolls, columns flow naturally
+    body.style.flexDirection  = 'column';
+    body.style.overflowY      = 'auto';
+    body.style.webkitOverflowScrolling = 'touch';
+    lCol.style.width          = '';
+    lCol.style.flexShrink     = '0';
+    lCol.style.height         = '';
+    lCol.style.overflowY      = 'visible';
+    lCol.style.borderRight    = '';
+    rCol.style.width          = '';
+    rCol.style.flexShrink     = '0';
+    rCol.style.overflowY      = 'visible';
+    rCol.style.flex           = '1';
+    // Image gets a fixed height so fields are reachable below it
+    if (imgScr) { imgScr.style.height = '40dvh'; imgScr.style.minHeight = ''; }
+  }
+}
+
+// ── Resize handle drag ──
+(function initIemResize() {
+  let _dragging = false, _startX = 0, _startW = 0;
+
+  document.addEventListener('mousedown', e => {
+    const handle = document.getElementById('iemResizeHandle');
+    if (!handle || e.target !== handle) return;
+    e.preventDefault();
+    _dragging = true;
+    _startX = e.clientX;
+    _startW = document.getElementById('iemModalInner').offsetWidth;
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!_dragging) return;
+    const modal = document.getElementById('iemModalInner');
+    if (!modal) return;
+    const delta = e.clientX - _startX;
+    const newW  = Math.max(320, Math.min(window.innerWidth * 0.95, _startW + delta));
+    modal.style.width = newW + 'px';
+    iemApplyLayout();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!_dragging) return;
+    _dragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const modal = document.getElementById('iemModalInner');
+    if (modal) localStorage.setItem(IEM_WIDTH_KEY, modal.offsetWidth);
+  });
+})();
 
 function iemToggleTextExpand() {
   _iemTextExpanded = !_iemTextExpanded;
   const ta      = document.getElementById('iemText');
   const imgScr  = document.getElementById('iemImgScroll');
-  const zoomBar = document.querySelector('#itemEditModal .zoom-bar') || imgScr?.previousElementSibling;
+  const zoomBar = document.getElementById('iemZoomBar');
   const btn     = document.getElementById('iemTextExpandBtn');
+  const modal   = document.getElementById('iemModalInner');
+  const isWide  = modal && modal.offsetWidth >= IEM_WIDE_BREAKPOINT;
 
   if (_iemTextExpanded) {
-    // Collapse image pane, expand text area
-    if (imgScr)  { imgScr._prevHeight  = imgScr.style.height;  imgScr.style.height  = '0'; imgScr.style.overflow = 'hidden'; }
-    if (zoomBar) { zoomBar._prevDisplay = zoomBar.style.display; zoomBar.style.display = 'none'; }
+    // In wide mode the image is in its own column — don't touch it
+    if (!isWide) {
+      if (imgScr)  { imgScr._prevHeight = imgScr.style.height; imgScr.style.height = '0'; imgScr.style.overflow = 'hidden'; }
+      if (zoomBar) { zoomBar._prevDisplay = zoomBar.style.display; zoomBar.style.display = 'none'; }
+    }
     if (ta) ta.style.height = '55vh';
     if (btn) { btn.textContent = '⤡ Collapse'; btn.title = 'Collapse text editor'; }
   } else {
-    // Restore image pane
-    if (imgScr)  { imgScr.style.height = imgScr._prevHeight || '30dvh'; imgScr.style.overflow = 'auto'; }
-    if (zoomBar) { zoomBar.style.display = zoomBar._prevDisplay || ''; }
+    if (!isWide) {
+      if (imgScr)  { imgScr.style.height = imgScr._prevHeight || '40dvh'; imgScr.style.overflow = 'auto'; }
+      if (zoomBar) { zoomBar.style.display = zoomBar._prevDisplay || ''; }
+    }
     if (ta) ta.style.height = '';
     if (btn) { btn.textContent = '⤢ Expand'; btn.title = 'Expand text editor'; }
   }
@@ -5808,6 +5944,9 @@ function closeItemEditModal() {
 
   const savedIdx = i; // capture before reset
   document.getElementById('itemEditModal').classList.remove('open');
+  // Always restore delete button visibility on close
+  const iemDeleteBtn = document.querySelector('#itemEditModal .btn-d');
+  if (iemDeleteBtn) iemDeleteBtn.style.display = '';
   _itemEditIdx   = -1;
 
   // Only mark dirty if the user actually edited something — not just opened and closed
@@ -5956,6 +6095,18 @@ function searchItems(query) {
     : [];
   const sortedIdxs = isGallery ? getSortedIndices() : [];
 
+  // ── Always reset ALL cards first so previous search styling is fully cleared ──
+  if (isGallery) {
+    galleryCards.forEach(c => { c.style.outline = ''; c.style.boxShadow = ''; c.style.opacity = ''; });
+  } else {
+    S.extractedImages.forEach((_, i) => {
+      const card = document.getElementById('eimg-' + i);
+      if (card) { card.style.outline = ''; card.style.boxShadow = ''; card.style.opacity = ''; }
+    });
+  }
+
+  let firstMatchEl = null;
+
   S.extractedImages.forEach((img, i) => {
     const caption = (img.caption || '').toLowerCase();
     const text    = (img.extractedText || '').toLowerCase();
@@ -5964,53 +6115,34 @@ function searchItems(query) {
     const matched = q && (caption.includes(q) || text.includes(q) || source.includes(q));
 
     if (isGallery) {
-      // Highlight gallery card
       const pos  = sortedIdxs.indexOf(i);
       const card = pos >= 0 ? galleryCards[pos] : null;
       if (card) {
-        if (!q) {
-          card.style.outline = '';
-          card.style.boxShadow = '';
-        } else if (matched) {
+        if (matched) {
           card.style.outline = '3px solid var(--gr)';
           card.style.boxShadow = '0 0 0 4px rgba(61,186,114,.25)';
+          if (!firstMatchEl) firstMatchEl = card;
         } else {
-          card.style.outline = '';
-          card.style.boxShadow = '';
           card.style.opacity = '0.4';
         }
-        if (!q) card.style.opacity = '';
       }
     } else {
-      // Accordion mode — outline the whole card for clear visibility
       const card = document.getElementById('eimg-' + i);
       if (!card) return;
-      if (!q) { card.style.outline = ''; card.style.boxShadow = ''; return; }
       if (matched) {
         card.style.outline = '3px solid var(--gr)';
         card.style.boxShadow = '0 0 0 6px rgba(61,186,114,.18)';
+        if (!firstMatchEl) firstMatchEl = card;
       } else {
-        card.style.outline = '';
-        card.style.boxShadow = '';
         card.style.opacity = '0.45';
       }
-      if (!q) card.style.opacity = '';
     }
 
     if (matched) matchCount++;
   });
 
-  // Reset opacity on all gallery cards when query is cleared
-  if (isGallery && !q) {
-    galleryCards.forEach(c => { c.style.opacity = ''; c.style.outline = ''; c.style.boxShadow = ''; });
-  }
-  // Reset opacity/outline on all accordion cards when query is cleared
-  if (!isGallery && !q) {
-    S.extractedImages.forEach((_, i) => {
-      const card = document.getElementById('eimg-' + i);
-      if (card) { card.style.outline = ''; card.style.boxShadow = ''; card.style.opacity = ''; }
-    });
-  }
+  // Store first match for Enter key scroll
+  _searchFirstMatch = firstMatchEl;
 
   if (countEl) {
     if (!q) {
@@ -6033,15 +6165,61 @@ function refreshQueryTab() {
   // Update context badge in both places
   const n    = S.records.length;
   const imgs = S.extractedImages.length;
+  // Total items across ALL loaded records + current session
+  const savedItemCount = S.records.reduce((sum, r) => sum + (r.extractedImages?.length || 0), 0);
+  const totalItems = savedItemCount + S.extractedImages.length;
   const text = n
-    ? n + ' record' + (n!==1?'s':'') + ' in context' + (imgs ? ' · ' + imgs + ' item' + (imgs!==1?'s':'') : '')
-    : imgs ? imgs + ' unsaved item' + (imgs!==1?'s':'') + ' in context' : 'No records loaded';
+    ? n + ' record' + (n!==1?'s':'') + ' in context' + (totalItems ? ' · ' + totalItems + ' item' + (totalItems!==1?'s':'') : '')
+    : S.extractedImages.length ? S.extractedImages.length + ' unsaved item' + (S.extractedImages.length!==1?'s':'') + ' in context' : 'No records loaded';
   const badge = document.getElementById('queryContextBadge');
   if (badge) badge.textContent = text;
   const modalBadge = document.getElementById('chatModalContextBadge');
   if (modalBadge) modalBadge.textContent = text;
+
+  // ── Context gauge ──────────────────────────────────────────────
+  const gauge      = document.getElementById('queryContextGauge');
+  const gaugeFill  = document.getElementById('queryGaugeFill');
+  const gaugeLabel = document.getElementById('queryGaugeLabel');
+  if (gauge && gaugeFill && gaugeLabel && (n > 0 || imgs > 0)) {
+    const ctxChars   = estimateChatContextChars();
+    const estTokens  = Math.round(ctxChars / 3.5);
+    const MAX_TOKENS = 200000;
+    const pct        = Math.min(100, (estTokens / MAX_TOKENS) * 100);
+    const kLabel     = estTokens >= 1000 ? Math.round(estTokens / 1000) + 'K' : estTokens;
+    const fillColor  = pct > 80 ? 'var(--rd)' : pct > 50 ? 'var(--am)' : 'var(--gr)';
+
+    gauge.style.display        = 'flex';
+    gaugeFill.style.width      = pct + '%';
+    gaugeFill.style.background = fillColor;
+    gaugeLabel.textContent     = kLabel;
+    gaugeLabel.style.color     = pct > 80 ? 'var(--rd)' : pct > 50 ? 'var(--am)' : 'var(--txf)';
+  } else if (gauge) {
+    gauge.style.display = 'none';
+  }
+
   // Render sessions panel
   renderChatSessions();
+}
+
+// Returns the character length of the full context string actually sent to the AI —
+// mirrors the assembly in querySubmit so the gauge reflects the real context size.
+function estimateChatContextChars() {
+  const allParts = buildQueryContext();
+  let ctx = 'You are a genealogical research assistant with access to the following records.\n\n';
+  allParts.forEach(p => {
+    ctx += p.block;
+    // Use per-item extracted text from each record (same source as gatherAllText)
+    if (p.record) {
+      const imgs = p.record.extractedImages || [];
+      imgs.forEach((img, i) => {
+        const text = (img.text || img.extractedText || '').substring(0, 300);
+        if (text) ctx += `Item ${img.seqNum || i+1}: ${text}\n`;
+      });
+    }
+    ctx += '\n';
+  });
+  ctx += 'Answer questions using only the information in the records above.';
+  return ctx.length;
 }
 
 function buildQueryContext() {
@@ -7530,6 +7708,7 @@ function renderChatSessions() {
 
 // ─────────────────────────────────────────────────────────────
 let _extractLayout = 'accordion'; // 'accordion' | 'gallery'
+let _searchFirstMatch = null;     // first matching element for Enter key scroll
 let _extractSort   = 'caption';     // 'added' | 'caption'
 
 function toggleExtractSort() {
@@ -8535,7 +8714,7 @@ function copyTxt() {
 
 // ═════════════════════════ COMBINED METADATA + JSON-LD PASS ══
 // ── Gather all extracted text from item records + paste buffer ──
-function gatherAllText(maxChars = 120000) {
+function gatherAllText(maxChars = 400000) {
   const parts = [];
 
   // First sync any live DOM edits into S.extractedImages
@@ -8545,19 +8724,34 @@ function gatherAllText(maxChars = 120000) {
   });
 
   // Read from S.extractedImages as the single source of truth
+  // Include caption and citation metadata alongside extracted text
   S.extractedImages.forEach((img, i) => {
-    const text = (img.extractedText || '').trim();
-    if (text) {
-      const num = img.seqNum || (i + 1);
-      parts.push(S.extractedImages.length > 1
-        ? `— Item Number ${num} —\n${text}`
-        : text);
-    }
+    const text        = (img.extractedText  || '').trim();
+    const caption     = (img.caption        || '').trim();
+    const citSource   = (img.citSource      || '').trim();
+    const citPublisher= (img.citPublisher   || '').trim();
+    const citDate     = (img.citDate        || '').trim();
+    const citPage     = (img.citPage        || '').trim();
+
+    if (!text && !caption) return; // skip items with nothing to offer
+
+    const num  = img.seqNum || (i + 1);
+    const meta = [caption, citSource, citPublisher, citDate, citPage]
+      .filter(Boolean).join(' · ');
+
+    const block = S.extractedImages.length > 1
+      ? `=== Item Number ${num} ===` +
+        (meta ? `\nMetadata: ${meta}` : '') +
+        (text ? `\nExtracted Text:\n${text}` : '')
+      : (meta ? `Metadata: ${meta}\n` : '') + text;
+
+    parts.push(block);
   });
 
   let combined = parts.join('\n\n');
 
-  // Truncate to stay within model context — ~120K chars ≈ ~30K tokens for the text portion
+  // Truncate to stay within model context — ~400K chars ≈ ~114K tokens for the text portion
+  // Claude Sonnet has a 200K token context window; system prompt + schema uses ~2K tokens
   if (combined.length > maxChars) {
     combined = combined.slice(0, maxChars)
       + `\n\n[… ${Math.round((combined.length - maxChars) / 1000)}K characters truncated to fit context window …]`;
@@ -8596,6 +8790,13 @@ async function doMetaScan(textOverride) {
     if (statusEl) statusEl.textContent = '⚠ Items need text — add captions or run ⚡ OCR first';
     return;
   }
+
+  // Show record size to user before processing begins
+  const itemCount   = S.extractedImages.filter(img => (img.extractedText||'').trim() || (img.caption||'').trim()).length;
+  const charCount   = text.length;
+  const estTokens   = Math.round(charCount / 3.5);
+  const sizeLabel   = charCount > 80000 ? '⚠ Very large' : charCount > 40000 ? 'Large' : charCount > 15000 ? 'Medium' : 'Small';
+  setStatus('busy', `⏳ ${sizeLabel} record — ${itemCount} items · ~${estTokens.toLocaleString()} tokens · starting analysis…`);
 
   // Build a photo manifest — items whose caption starts with "Photo of " identify
   // their image as a portrait of the named person and are passed to the AI as context
@@ -8667,18 +8868,14 @@ const overlay = document.getElementById('jsonldScanOverlay');
   statusEl.textContent = '';
 
   // ── Reset all prior analysis state so no stale data persists ──
-  S.jsonLD             = null;
   S.profiles           = [];
-  S.persons            = [];
   S.events             = [];
   S.timeline           = [];
   S.themes             = [];
   S.keywordNarrative   = '';
   S.alternativeNames   = [];
   S.publisherSummary   = [];
-  S.historicalAccount  = '';
   S.historianAnalysis  = '';
-  S.narrativeRecon     = '';
   S.structuredAnalysis = '';
   S.tagClusters = null;
   S.tagDiagram = '';
@@ -8820,17 +9017,11 @@ Rules:
       : '';
 
     scanMsg.textContent = 'Pass 2: Running full AI analysis…';
+    let dynamicMaxTokens = 64000; // maximum Claude Sonnet allows
 
-    // ── PASS 2: Full analysis with name context ───────────────────
-    const res = await fetchWithTimeout(null, {
-      method: 'POST',
-      headers: apiHeaders(),
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
-        system: `You are a genealogical archivist. Analyze historical newspaper text and return ONE valid JSON object — no markdown fences, no preamble, no explanation.
+    const SYSTEM_PROMPT_2 = `You are a genealogical archivist. Analyze historical newspaper text and return ONE valid JSON object — no markdown fences, no preamble, no explanation.
 
-The JSON object must have exactly nine top-level keys in this order: "profiles", "persons", "meta", "events", "timeline", "themes", "keywordNarrative", "alternativeNames", "jsonld".
+The JSON object must have exactly seven top-level keys in this order: "profiles", "timeline", "meta", "events", "themes", "keywordNarrative", "alternativeNames".
 
 IMPORTANT: Generate "profiles" and "persons" FIRST before any other analysis — all downstream sections depend on knowing who is in the record. Use the NAME VARIATIONS provided in the user message to correctly identify and group all references to the same person across the text.
 
@@ -8842,8 +9033,9 @@ IMPORTANT: Generate "profiles" and "persons" FIRST before any other analysis —
   { "name": "full name as it appears in the source", "summary": "2-4 sentence prose profile drawing only from the source text" }
 ],
 
-"persons": [
-  { "name": "full name", "birthDate": "YYYY-MM-DD or partial or empty", "deathDate": "YYYY-MM-DD or partial or empty", "location": "primary location or empty" }
+"timeline": [
+  Include all datable occurrences: personal life events, travel, community events, organizational meetings, annual meetings, elections, legal proceedings, disasters, and public gatherings.
+  { "date": "YYYY or YYYY-MM or YYYY-MM-DD", "label": "short event label", "snippet": "one sentence", "certainty": "actual|inferred", "source": "supporting text" }
 ],
 
 "meta": {
@@ -8859,56 +9051,34 @@ IMPORTANT: Generate "profiles" and "persons" FIRST before any other analysis —
 },
 
 "events": [
-  Only include events that are SIGNIFICANT — not routine or incidental mentions.
-  Significant means: births, deaths, marriages, divorces, legal proceedings, accidents, notable travel, military service, elections, disasters, or any occurrence with lasting historical or genealogical consequence. Also include significant community events: parades, picnics, religious services or revivals, festivals, memorials, parties or social gatherings of note, political or civic meetings, governmental actions, organizational meetings, annual meetings of any organization or society, and public celebrations.
-  Omit trivial or purely social mentions.
-  Order by date ascending. If date is unknown or inferred, place at end.
-  { "date": "YYYY-MM-DD or partial or empty", "name": "short event name", "summary": "2-3 sentence prose description of the event and its significance, drawn only from the source text", "persons": "comma-separated names of people involved", "location": "place where event occurred or empty" }
-],
-
-"timeline": [
-  Include all datable occurrences: personal life events, travel, community events, organizational meetings, annual meetings, elections, legal proceedings, disasters, and public gatherings.
-  { "date": "YYYY or YYYY-MM or YYYY-MM-DD", "label": "short event label", "snippet": "one sentence", "certainty": "actual|inferred", "source": "supporting text" }
+  List EVERY discrete event. Focus heavily on family-history-relevant events:
+  Births · Deaths · Marriages · Engagements · Divorces · Funerals · Probate proceedings · Land transactions · Immigration · Naturalization · Military service · Baptisms · Confirmations · Graduations · Employment · Business ownership · Illness · Hospitalization · Travel · Club participation · Political activity · Farm operations · Accidents · Criminal proceedings · Court appearances · Financial hardship · Auctions · Family reunions · Relocations · Obituaries · Anniversary celebrations · Census-related household changes.
+  Include every instance found.
+  { "name": "event name", "date": "YYYY-MM-DD or partial or empty", "location": "place or empty", "participants": ["name1", "name2"], "description": "one sentence" }
 ],
 
 "themes": [
-  After identifying all tags and keywords from the meta section, analyze their relationships, semantic clusters, and what overarching historical themes or cultural conditions they collectively reveal.
-  Focus on: what patterns of life are represented (migration, family formation, economic conditions, social structure, community bonds, religious life, political engagement, hardship, celebration); what larger historical forces are at work (westward expansion, industrialization, immigration waves, wars, economic cycles, epidemics, agricultural cycles); what this record reveals about how people of this time and place lived, worked, and related to one another.
-  Each theme should connect specific evidence from the record to the broader historical narrative.
-  { "theme": "short theme name", "summary": "2-3 sentence description connecting evidence in this record to the broader historical theme or narrative", "tags": ["relevant", "tags", "from", "meta"] }
+  After identifying all tags and keywords from the meta section, analyze their relationships and what overarching historical themes they collectively reveal.
+  { "theme": "short theme name", "summary": "2-3 sentence description connecting evidence to the broader historical theme", "tags": ["relevant", "tags"] }
 ],
 
-"keywordNarrative": "Analyze the tags and keywords generated in the meta section. Identify the semantic relationships between them — which keywords cluster together, which are in tension, and what patterns emerge. Then determine what overarching historical themes, cultural conditions, or social dynamics they collectively reveal about this time and place. Structure your response as: (1) a brief statement of the dominant theme or cultural context, (2) an analysis of keyword relationships and clusters, and (3) what this combination of keywords tells us about the historical moment — the concerns, values, or conditions of the era. Be specific and analytical, not narrative. Plain paragraphs separated by blank lines. Output only the analysis text.",
+"keywordNarrative": "Analyze the tags and keywords. Identify semantic relationships, clusters, tensions, and patterns. Determine what overarching historical themes they reveal. Structure as: (1) dominant theme, (2) keyword relationships, (3) what this reveals about the historical moment. Plain paragraphs separated by blank lines.",
 
 "alternativeNames": [
-  For each person identified in the record, find ALL name variations that appear in the source text and very likely refer to the same individual.
-  Use only the following conditions:
-  - Start with the full canonical name (e.g. "Henry White").
-  - Find abbreviations (e.g. "H. White"), partial names (e.g. "Henry" or "White" when context clearly singles out this person), alternative spellings or formats, and titles with names (e.g. "Mr. White", "Dr. Henry White", "Mrs. Ambrose Diehl").
-  - Only group variations together if context makes it very likely they refer to the same person.
-  - Do NOT merge different individuals who share a last name.
-  - Omit persons with only one name form — only include entries where at least one alternative was found.
-  - Ignore organizations, places, and non-person entities.
-  { "canonicalName": "full name as established above", "variations": ["variation 1", "variation 2", ...], "notes": "brief explanation of how variations were matched — optional, only if ambiguous" }
-],
+  For each person identified, find ALL name variations that appear in the source text and very likely refer to the same individual.
+  Only group variations if context makes it very likely they refer to the same person. Do NOT merge different individuals sharing a last name.
+  Omit persons with only one name form.
+  { "canonicalName": "full established name", "variations": ["variation 1", "variation 2"], "notes": "brief explanation if ambiguous" }
+]`;
 
-"jsonld": {
-  "@context": "https://schema.org",
-  "@type": "Collection",
-  "@id": "[use the record_id from the user message]",
-  "name": "[meta.title]",
-  "description": "[brief overview of content]",
-  "temporalCoverage": "[date or date range]",
-  "spatialCoverage": "[geographic scope]",
-  "isPartOf": { "@type": "Periodical", "name": "[meta.publication]", "datePublished": "[meta.date]" },
-  "hasPart": [ /* Person, Event, Place, Organization nodes go here */ ]
-}
-
-For each person found add: { "@type":"Person", "name":"", "birthDate":"", "deathDate":"", "jobTitle":"", "address":{"addressLocality":""}, "relatedTo":[{"@type":"Person","name":"","relationship":""}] }
-For each event add: { "@type":"Event", "name":"", "startDate":"", "location":{"@type":"Place","name":""}, "description":"" }
-For each place add: { "@type":"Place", "name":"", "address":{"addressLocality":"","addressRegion":""} }
-For each organization add: { "@type":"Organization", "name":"", "description":"" }
-Only add additionalProperty for Conflicting Evidence or Analytical Notes when genuinely needed.`,
+    // ── PASS 2: Full analysis with name context ───────────────────
+    const res = await fetchWithTimeout(null, {
+      method: 'POST',
+      headers: apiHeaders(),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: dynamicMaxTokens,
+        system: SYSTEM_PROMPT_2,
         messages: [{
           role: 'user',
           content: `record_id: ${S.lastSavedId || ('rec_' + Date.now())}
@@ -8949,26 +9119,6 @@ ${srcContext ? 'SOURCE INFO:\n' + srcContext + '\n\n' : ''}${citContext ? 'CITAT
         }]
       })
     });
-
-    // Kick off narrative generation in parallel (Haiku — fast, cheap prose)
-    const narrativePromise = fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-      method: 'POST', headers: apiHeaders(),
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 900,
-        system: `You are writing an engaging historical narrative for a genealogical record. Your goal is to bring the people and community to life for a modern reader discovering their family history.
-
-Write 3-4 paragraphs. Structure them as follows:
-- Paragraph 1: Introduce the people — their names, relationships to one another, and their place in the community. What roles did they play? Were they farmers, merchants, civic leaders, travelers?
-- Paragraph 2: Describe what was happening — the events, activities, gatherings, or milestones documented in the record. Capture the texture of daily life and community rhythm.
-- Paragraph 3: Highlight anything that would be interesting or surprising to a descendant discovering this record today — a journey taken, a visitor from far away, an achievement, a hardship, a celebration, a connection to a larger historical moment.
-- Paragraph 4 (if warranted): Note any inferences or context that help place these people in their historical moment. Clearly mark these as inferred.
-
-Write with warmth and historical curiosity. Use vivid but accurate language. Draw only from the source material — do not invent facts. Separate paragraphs with a blank line. Output only the paragraphs, nothing else.`,
-        messages: [{ role: 'user', content: `Write a historical narrative account based on this genealogical newspaper record:\n\n${chatBlock}${photoBlock}${text}` }]
-      })
-    });
-
     // Kick off historian's analysis in parallel
     const historianPromise = fetchWithTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST', headers: apiHeaders(),
@@ -8990,36 +9140,25 @@ Output only the numbered recommendations, no preamble, no section heading, no cl
     });
 
 
-    // Kick off narrative reconstruction in parallel
-    const narrativeReconPromise = fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-      method: 'POST', headers: apiHeaders(),
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1400,
-        system: `You are a historical journalist writing for a magazine. Using the social page entries provided, reconstruct an engaging narrative of community life during this time period.
-
-Focus on:
-- Daily rhythms of life — routines, seasons, domestic details
-- Social norms and values — what mattered to these people, how they related to each other
-- Recurring characters — individuals who appear often, their roles in the community
-- Notable events — moments that stood out in the flow of ordinary life
-
-Write in a magazine feature style, as if describing a week in the life of the town. Use vivid, present-tense or past-tense narrative prose. Draw only on details found in the source material — do not invent facts. Aim for 3–5 compelling paragraphs. No headings, no bullet points — flowing narrative only.`,
-        messages: [{ role: 'user', content: `Reconstruct a narrative from these genealogical social page records:\n\n${chatBlock}${photoBlock}${text}` }]
-      })
-    });
-
     // Kick off structured analysis in parallel
     const structuredAnalysisPromise = fetchWithTimeout('https://api.anthropic.com/v1/messages', {
       method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 16000,
         system: `You are an intelligent information extraction and analysis system. Your task is to process raw text from small-town newspaper "social pages" (community notes, local happenings, personal updates, events, etc.) and convert it into structured, valuable insights.
 
 The source text is divided into numbered items separated by "— Item Number N —" markers. For EVERY bullet point you write, append the item number(s) that support it as a citation in the format [Item N] or [Items N, M]. Use the item boundaries in the source text to determine which item(s) each fact comes from.
 
 Format your response using ## headings for EACH of the following categories as its own section. Use bullet points within each section. Be concise and specific — cite names, dates, and places from the source text. Append [Item N] citations to every bullet. Output ONLY the analysis sections below, no preamble or closing remarks.
+
+## 📅 Events
+List EVERY event found. Focus heavily on family-history-relevant events including:
+Births · Deaths · Marriages · Engagements · Divorces · Funerals · Probate proceedings · Land transactions · Immigration · Naturalization · Military service · Baptisms · Confirmations · Graduations · Employment · Business ownership · Illness · Hospitalization · Travel · Club participation · Political activity · Farm operations · Accidents · Criminal proceedings · Court appearances · Financial hardship · Auctions · Family reunions · Relocations · Obituaries · Anniversary celebrations · Census-related household changes.
+Include every instance found. [Item N]
+
+## 🕐 Dates & Time References
+List ALL explicit dates, years, and relative time phrases with inferred approximate dates where possible. Include every one. [Item N]
 
 ## 👤 People
 List each person mentioned with full name, any nicknames or name variations, and their relationship to others if stated. [Item N]
@@ -9027,14 +9166,8 @@ List each person mentioned with full name, any nicknames or name variations, and
 ## 📍 Locations
 List each place mentioned — towns, venues, farms, streets, churches, schools. [Item N]
 
-## 📅 Events
-List each event — weddings, funerals, visits, travel, parties, meetings, births, illnesses. [Item N]
-
 ## 🏛 Organizations
 List each organization — churches, clubs, schools, lodges, businesses, newspapers. [Item N]
-
-## 🕐 Dates & Time References
-List all explicit dates, years, and relative time phrases with inferred approximate dates where possible. [Item N]
 
 ## 🔗 Relationships
 Identify relationships between people — family, social, business. Note who interacts with whom. [Item N]
@@ -9048,9 +9181,8 @@ Highlight patterns and notable insights: frequently mentioned individuals, recur
       })
     });
 
-    const [data, narrativeRes, historianRes, structuredAnalysisRes, tagClusterRes, tagDiagramRes, narrativeReconRes] = await Promise.all([
+    const [data, historianRes, structuredAnalysisRes, tagClusterRes, tagDiagramRes] = await Promise.all([
       jsonWithTimeout(res),
-      narrativePromise.then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
       historianPromise.then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
       structuredAnalysisPromise.then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
       // Cluster the tags into 3 dominant themes
@@ -9106,6 +9238,7 @@ Rules:
   * solid lines for reinforcing/supportive relationships between clusters
   * dashed lines (stroke-dasharray="6,3") for contrasting or tension relationships
   * arrowheads (marker-end) to show direction of influence between clusters
+  * CRITICAL: all connecting lines must start and end exactly at the EDGE of each circle, never passing through or inside any circle. Calculate the endpoint of each line as the point on the circumference closest to the other circle: given two circles with centers (x1,y1) radius r1 and (x2,y2) radius r2, the line goes from (x1 + r1 * dx/dist, y1 + r1 * dy/dist) to (x2 - r2 * dx/dist, y2 - r2 * dy/dist) where dx=x2-x1, dy=y2-y1, dist=sqrt(dx*dx+dy*dy)
 - Color each cluster using the color values provided in the tag cluster data
 - Use clean sans-serif font (font-family="Arial, sans-serif")
 - Minimum font-size: 13px for sub-nodes, 15px for cluster labels, 18px for center node
@@ -9118,22 +9251,10 @@ Rules:
         })
       }).then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
       // Narrative reconstruction
-      narrativeReconPromise.then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null)
     ]);
 
     // User clicked Stop while requests were in flight — discard results
     if (_scanCancelled) throw new Error('CANCELLED');
-
-    // Process narrative
-    const narrative = narrativeRes && !narrativeRes.error
-      ? (narrativeRes.content||[]).map(b => b.text||'').join('').trim()
-      : '';
-    if (narrativeRes && !narrativeRes.error && narrative) {
-      trackUsage('Historical Account', narrativeRes);
-      S.historicalAccount = narrative;
-    } else {
-      S.historicalAccount = '';
-    }
 
     // Process historian's analysis
     const historianText = historianRes && !historianRes.error
@@ -9198,18 +9319,6 @@ Rules:
       }
     } catch(e) { S.tagDiagram = ''; }
 
-    // Process narrative reconstruction
-    try {
-      const nrText = narrativeReconRes && !narrativeReconRes.error
-        ? (narrativeReconRes.content||[]).map(b => b.text||'').join('').trim()
-        : '';
-      if (nrText) {
-        trackUsage('Narrative Reconstruction', narrativeReconRes);
-        S.narrativeRecon = nrText;
-      } else {
-        S.narrativeRecon = '';
-      }
-    } catch(e) { S.narrativeRecon = ''; }
     if (data.error) {
       const msg = typeof data.error === 'object'
         ? (data.error.message || data.error.type || JSON.stringify(data.error))
@@ -9294,58 +9403,18 @@ Rules:
     }
     const _parsedFinal = parsed || safeParseJsonLD(raw);
 
-    // Handle both {meta, jsonld} wrapper and bare JSON-LD fallback
-    let meta, jsonld, timeline = [], persons = [], profiles = [], events = [], themes = [], keywordNarrative = '', alternativeNames = [];
-    if (_parsedFinal.meta && _parsedFinal.jsonld) {
-      meta     = _parsedFinal.meta;
-      jsonld   = _parsedFinal.jsonld;
-      timeline = Array.isArray(_parsedFinal.timeline) ? _parsedFinal.timeline : [];
-      persons  = Array.isArray(_parsedFinal.persons)  ? _parsedFinal.persons  : [];
-      profiles = Array.isArray(_parsedFinal.profiles) ? _parsedFinal.profiles : [];
-      events   = Array.isArray(_parsedFinal.events)   ? _parsedFinal.events   : [];
-      themes  = Array.isArray(_parsedFinal.themes)  ? _parsedFinal.themes  : [];
-      keywordNarrative = typeof _parsedFinal.keywordNarrative === 'string' ? _parsedFinal.keywordNarrative.trim() : '';
-      alternativeNames = Array.isArray(_parsedFinal.alternativeNames) ? _parsedFinal.alternativeNames : [];
-    } else if (_parsedFinal['@context'] || _parsedFinal['@type']) {
-      // Model returned bare JSON-LD without meta wrapper — extract meta from it
-      jsonld = _parsedFinal;
-      meta = {
-        publication: _parsedFinal.isPartOf?.name || '',
-        date:        _parsedFinal.isPartOf?.datePublished || _parsedFinal.temporalCoverage || '',
-        volume:      _parsedFinal.isPartOf?.issueNumber || '',
-        page:        _parsedFinal.isPartOf?.pagination || '',
-        type:        (_parsedFinal.additionalProperty||[]).find(p=>p.name==='Article Type')?.value || '',
-        title:       _parsedFinal.name || '',
-        people:      (_parsedFinal.about||[]).filter(p=>p['@type']==='Person').map(p=>p.name).join(', '),
-        locations:   _parsedFinal.spatialCoverage || '',
-        tags:        Array.isArray(_parsedFinal.keywords) ? _parsedFinal.keywords : []
-      };
-    } else {
-      // Partial or unexpected structure — extract whatever is present
-      meta     = _parsedFinal.meta     || {};
-      jsonld   = _parsedFinal.jsonld   || _parsedFinal;
-      timeline = Array.isArray(_parsedFinal.timeline) ? _parsedFinal.timeline : [];
-      persons  = Array.isArray(_parsedFinal.persons)  ? _parsedFinal.persons  : [];
-      profiles = Array.isArray(_parsedFinal.profiles) ? _parsedFinal.profiles : [];
-      events   = Array.isArray(_parsedFinal.events)   ? _parsedFinal.events   : [];
-      themes  = Array.isArray(_parsedFinal.themes)  ? _parsedFinal.themes  : [];
-      keywordNarrative = typeof _parsedFinal.keywordNarrative === 'string' ? _parsedFinal.keywordNarrative.trim() : '';
-      alternativeNames = Array.isArray(_parsedFinal.alternativeNames) ? _parsedFinal.alternativeNames : [];
-      // Ensure jsonld has minimum required fields
-      if (!jsonld['@context']) jsonld['@context'] = 'https://schema.org';
-      if (!jsonld['@type'])    jsonld['@type']    = 'Collection';
-    }
-    // ── Store and display JSON-LD ──────────────────────────────
-    S.jsonLD = jsonld;
-    const pretty = JSON.stringify(jsonld, null, 2);
-    out.style.display = '';
-    const hdrEl = document.getElementById('jsonldOutHeader');
-    if (hdrEl) hdrEl.style.display = '';
-    out.value = pretty;
+    // Extract all useful fields from the response
+    let meta             = _parsedFinal.meta     || {};
+    let timeline         = Array.isArray(_parsedFinal.timeline)         ? _parsedFinal.timeline         : [];
+    let persons          = Array.isArray(_parsedFinal.persons)          ? _parsedFinal.persons          : [];
+    let profiles         = Array.isArray(_parsedFinal.profiles)         ? _parsedFinal.profiles         : [];
+    let events           = Array.isArray(_parsedFinal.events)           ? _parsedFinal.events           : [];
+    let themes           = Array.isArray(_parsedFinal.themes)           ? _parsedFinal.themes           : [];
+    let keywordNarrative = typeof _parsedFinal.keywordNarrative === 'string' ? _parsedFinal.keywordNarrative.trim() : '';
+    let alternativeNames = Array.isArray(_parsedFinal.alternativeNames) ? _parsedFinal.alternativeNames : [];
 
     // ── Merge AI keywords into tags ────────────────────────────
-    const aiKeywords = Array.isArray(meta.tags) ? meta.tags
-      : Array.isArray(jsonld.keywords) ? jsonld.keywords : [];
+    const aiKeywords = Array.isArray(meta.tags) ? meta.tags : [];
     let tagsAdded = 0;
     aiKeywords.forEach(kw => {
       const k = String(kw||'').trim();
@@ -9353,58 +9422,42 @@ Rules:
     });
     if (tagsAdded > 0) renderTags();
 
-    // Remove keywords from JSON-LD — they are now in S.tags
-    delete jsonld.keywords;
-
-    // ── Embed timeline in JSON-LD ────────────────────────────
-    if (timeline.length) jsonld.timeline = timeline;
-
-    // ── Store and render timeline + persons ───────────────────
-    S.timeline = timeline;
-    S.persons  = persons;
-    S.profiles = profiles;
-    S.events   = events;
+    // ── Store and render extracted data ───────────────────────
+    S.timeline          = timeline;
+    S.profiles          = profiles;
+    S.events            = events;
     S.themes            = themes;
     S.keywordNarrative  = keywordNarrative;
     S.alternativeNames  = alternativeNames;
-    S.publisherSummary = buildPublisherSummary();
+    S.publisherSummary  = buildPublisherSummary();
     renderTimeline();
     renderPublishers();
-    renderPersons();
     renderProfiles();
     renderEvents();
 
-    // Refresh textarea with updated JSON-LD (now includes timeline)
-    out.value = JSON.stringify(jsonld, null, 2);
 
     // Show HTML toggle now that analysis exists
     const btnHtmlEl = document.getElementById('btnHtmlToggle');
     if (btnHtmlEl) { btnHtmlEl.style.display = ''; btnHtmlEl.textContent = '🌐 HTML'; }
-
-    // ── Show historical account ────────────────────────────────
-    if (S.historicalAccount) {
-      const haSection = document.getElementById('historicalAccountSection');
-      const haText    = document.getElementById('historicalAccountText');
-      if (haSection) haSection.style.display = 'flex';
-      if (haText)    haText.innerHTML = paragraphsHtml(S.historicalAccount);
-    }
-    const pc = countType(jsonld,'Person'), ec = countType(jsonld,'Event');
     tabBtn.textContent   = 'Analysis';
     statusEl.textContent = '';
     playBing();
-    const cbLD = document.getElementById('btnCopyJsonLd');
-    if (cbLD) cbLD.disabled = false;
 
     // Mark record dirty — show Save Record regardless of scanning state
     S.scanning = false;
     setSaveVisible(true);
 
     S.lastGenerateAt = new Date().toISOString();
-    S.lastGenerateDuration = Math.round((Date.now() - scanStart) / 1000); // seconds
+    S.lastGenerateDuration = Math.round((Date.now() - scanStart) / 1000);
     S.lastGenerateProvider = getProvider().label;
     markDirty();
     refreshSourceTabButtons();
-    setStatus('ok', `Extracted · ${pc} people · ${ec} events documented`);
+    const pc = 0;
+    const ec = (S.events   || []).length;
+    const outputTokens = data?.usage?.output_tokens || 0;
+    const tokenPct     = outputTokens ? Math.round((outputTokens / 64000) * 100) : 0;
+    const tokenWarning = outputTokens > 60000 ? ' ⚠ Near 64K limit — consider splitting this record' : outputTokens > 50000 ? ' ▲ Large response' : '';
+    setStatus('ok', `Extracted · ${pc} people · ${ec} events · ${outputTokens.toLocaleString()} output tokens (${tokenPct}% of 64K)${tokenWarning}`);
     scanMsg.textContent = `✓ ${pc} people · ${ec} events · AI Analysis ready`;
 
   } catch(err) {
@@ -9467,7 +9520,7 @@ Rules:
     stopGenerateStatusMessages();
     setTimeout(() => { scanDiv.style.display = 'none'; }, 4000);
     // Render iframe after all state is settled
-    if (S.jsonLD) renderGenerateResults();
+    if (S.events?.length || S.themes?.length || S.lastGenerateAt) renderGenerateResults();
   }
 }
 
@@ -9560,7 +9613,43 @@ async function doConflictsScan() {
     }
 
     const provider = _currentProvider;
-    const conflictsPrompt = `Analyze the following newspaper records for GPS-4 Conflicting Evidence. Each item is clearly labeled with its Item Number — use those numbers in your findings.\n\n${content}`;
+    // Build the previous conflicts re-evaluation block
+    // Include current source text for each referenced item so the AI can
+    // directly compare the original conflicting statements against what the source says now
+    const unresolvedPrev = (S._conflicts || []).filter(c => !c._resolved);
+
+    const getCurrentItemText = (statementText) => {
+      // Try to extract "Item N" from statement text to fetch current source
+      const m = String(statementText || '').match(/\bItem\s+(\d+)\b/i);
+      if (!m) return null;
+      const n = parseInt(m[1], 10);
+      const img = S.extractedImages.find(img => (img.seqNum || 0) === n)
+               || S.extractedImages[n - 1];
+      if (!img) return null;
+      const parts = [img.caption, img.citSource, img.citDate, img.extractedText]
+        .filter(Boolean).map(s => s.trim()).filter(Boolean);
+      return parts.length ? `Current text of Item ${n}:\n${parts.join(' · ')}` : null;
+    };
+
+    const prevConflictsBlock = unresolvedPrev.length
+      ? `\n\nPREVIOUSLY FLAGGED CONFLICTS — RE-EVALUATE EACH:\n` +
+        `For each conflict, compare the original statements against the CURRENT SOURCE TEXT shown. ` +
+        `If the current source text resolves the contradiction, set "resolved": true. ` +
+        `If the conflict still exists, set "resolved": false. ` +
+        `Include ALL of these in gpsConflicts with a resolved field.\n\n` +
+        unresolvedPrev.map((c, i) => {
+          const currentA = getCurrentItemText(c.item1);
+          const currentB = getCurrentItemText(c.item2);
+          return `Previous conflict ${i + 1} [${(c.severity||'medium').toUpperCase()}] — ${c.subject}\n` +
+            `  Statement A (original): "${c.item1}"\n` +
+            (currentA ? `  ${currentA}\n` : '') +
+            `  Statement B (original): "${c.item2}"\n` +
+            (currentB ? `  ${currentB}\n` : '') +
+            `  Issue: ${c.explanation}`;
+        }).join('\n\n') + '\n'
+      : '';
+
+    const conflictsPrompt = `Analyze the following newspaper records for GPS-4 Conflicting Evidence. Each item is clearly labeled with its Item Number — use those numbers in your findings.${prevConflictsBlock}\n\n${content}`;
 
     const conflictsSystem = `You are a genealogical proof analyst applying the Genealogical Proof Standard (GPS).
 
@@ -9572,11 +9661,12 @@ Return ONLY a JSON object in this exact format — no markdown, no preamble, no 
 {
   "gpsConflicts": [
     {
-      "item1": "First conflicting statement (quote or paraphrase, include Item Number)",
-      "item2": "Second conflicting statement (quote or paraphrase, include Item Number)",
+      "item1": "Item N — exact quote or paraphrase from that item (MUST start with 'Item N — ')",
+      "item2": "Item N — exact quote or paraphrase from that item (MUST start with 'Item N — ')",
       "subject": "The person, date, or fact in conflict",
       "explanation": "Brief explanation of why these conflict",
-      "severity": "high|medium|low"
+      "severity": "high|medium|low",
+      "resolved": false
     }
   ],
   "gpsConflictSummary": "One sentence summary, or 'No conflicting evidence detected.' if none found."
@@ -9651,7 +9741,7 @@ If no conflicts are found, return an empty gpsConflicts array.`;
     const conflicts = parsed.gpsConflicts || [];
     const summary   = parsed.gpsConflictSummary || '';
 
-    if (conflicts.length === 0) {
+    if (conflicts.length === 0 && unresolvedPrev.length === 0) {
       S._conflicts = [];
       S._conflictSummary = summary || 'No conflicting evidence detected.';
       if (conflictsDisplay) conflictsDisplay.innerHTML =
@@ -9659,25 +9749,49 @@ If no conflicts are found, return an empty gpsConflicts array.`;
       setStatus('ok', '✓ No conflicts found');
     } else {
       const existing = S._conflicts || [];
-      const isDuplicate = newC => existing.some(old =>
+
+      // Apply the AI's resolved judgement to previously flagged conflicts
+      let autoResolvedCount = 0;
+      const updatedExisting = existing.map(old => {
+        if (old._resolved) return old; // already manually resolved — leave it
+        // Find if the AI returned a verdict on this conflict
+        const aiVerdict = conflicts.find(newC =>
+          newC.subject?.trim().toLowerCase() === old.subject?.trim().toLowerCase() ||
+          (newC.item1 === old.item1 && newC.item2 === old.item2)
+        );
+        if (aiVerdict && aiVerdict.resolved === true) {
+          autoResolvedCount++;
+          return { ...old, _resolved: true, _resolution: 'Auto-resolved: AI determined conflict no longer present in source text' };
+        }
+        return old;
+      });
+
+      // Add genuinely new conflicts (not previously seen, not AI-marked resolved)
+      const isDuplicate = newC => updatedExisting.some(old =>
         old.subject?.trim().toLowerCase() === newC.subject?.trim().toLowerCase() ||
         (old.item1 === newC.item1 && old.item2 === newC.item2)
       );
       const newOnly = conflicts
+        .filter(c => c.resolved !== true)  // exclude AI-marked resolved
         .map(c => ({ ...c, _resolved: false, _resolution: null }))
         .filter(c => !isDuplicate(c));
 
-      S._conflicts      = [...existing, ...newOnly];
+      S._conflicts      = [...updatedExisting, ...newOnly];
       S._conflictSummary = summary;
       S.lastConflictAt  = new Date().toISOString();
-      if (newOnly.length > 0) markDirty();
+      if (newOnly.length > 0 || autoResolvedCount > 0) markDirty();
       refreshSourceTabButtons();
       refreshAiAnalysisPane();
 
-      const high = S._conflicts.filter(c => c.severity==='high'   && !c._resolved).length;
-      const med  = S._conflicts.filter(c => c.severity==='medium' && !c._resolved).length;
-      const low  = S._conflicts.filter(c => c.severity==='low'    && !c._resolved).length;
-      setStatus('ok', `⚠ ${S._conflicts.length} conflict${S._conflicts.length!==1?'s':''} — ${high} HIGH · ${med} MEDIUM · ${low} LOW`);
+      const high     = S._conflicts.filter(c => c.severity==='high'   && !c._resolved).length;
+      const med      = S._conflicts.filter(c => c.severity==='medium' && !c._resolved).length;
+      const low      = S._conflicts.filter(c => c.severity==='low'    && !c._resolved).length;
+      const resolved = S._conflicts.filter(c => c._resolved).length;
+      const parts    = [`⚠ ${high + med + low} unresolved — ${high} HIGH · ${med} MEDIUM · ${low} LOW`];
+      if (autoResolvedCount) parts.push(`✓ ${autoResolvedCount} auto-resolved`);
+      if (newOnly.length)    parts.push(`${newOnly.length} new`);
+      if (resolved)          parts.push(`${resolved} total resolved`);
+      setStatus('ok', parts.join(' · '));
     }
 
   } catch(err) {
@@ -9831,7 +9945,7 @@ function _loadRecordIntoSessionWork(record) {
         const sev = (c.severity||'medium').toLowerCase();
         const col = sevColor[sev] || sevColor.medium;
         const resolvedBadge = c._resolved
-          ? ' <span style="color:#2e7d32;font-size:15px">✔ Resolved</span>'
+          ? ' <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px">✔ Resolved</span>'
           : '';
         const cardOpacity = '';
         const borderCol   = c._resolved ? '#2e7d32' : col;
@@ -9851,11 +9965,11 @@ function _loadRecordIntoSessionWork(record) {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
             <div style="background:rgba(224,85,85,.07);border:1px solid rgba(224,85,85,.25);border-radius:2px;padding:8px 10px">
               <div style="font-size:13px;color:#c84444;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Statement A</div>
-              <div style="font-size:17px;color:var(--tx);line-height:1.55">${esc(c.item1)}</div>
+              <div style="font-size:17px;color:var(--tx);line-height:1.55">${linkifyConflictStmt(c.item1)}</div>
             </div>
             <div style="background:rgba(224,85,85,.07);border:1px solid rgba(224,85,85,.25);border-radius:2px;padding:8px 10px">
               <div style="font-size:13px;color:#c84444;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Statement B</div>
-              <div style="font-size:17px;color:var(--tx);line-height:1.55">${esc(c.item2)}</div>
+              <div style="font-size:17px;color:var(--tx);line-height:1.55">${linkifyConflictStmt(c.item2)}</div>
             </div>
           </div>
           <div style="font-size:17px;color:var(--txd);line-height:1.55;font-style:italic;
@@ -9887,7 +10001,6 @@ function _loadRecordIntoSessionWork(record) {
     if (bfc) { bfc.style.display = 'none'; }
   }
   if (record.schemaOrgAiAnalysis) {
-    S.jsonLD = record.schemaOrgAiAnalysis;
     const out = document.getElementById('jsonldOut');
     out.value = JSON.stringify(record.schemaOrgAiAnalysis, null, 2);
     document.getElementById('jsonldTabBtn').textContent = 'Analysis';
@@ -9896,15 +10009,12 @@ function _loadRecordIntoSessionWork(record) {
     const btnHtmlImp = document.getElementById('btnHtmlToggle');
     if (btnHtmlImp) { btnHtmlImp.style.display = ''; btnHtmlImp.textContent = '🌐 HTML'; }
   }
-  S.historicalAccount  = record.historicalAccount  || '';
   S.historianAnalysis   = record.historianAnalysis   || '';
-  S.narrativeRecon      = record.narrativeRecon      || '';
   S.structuredAnalysis  = record.structuredAnalysis  || '';
   S.tagClusters         = record.tagClusters         || null;
   S.tagDiagram          = record.tagDiagram          || '';
   S.timeline          = Array.isArray(record.timeline) ? record.timeline : [];
   S.publisherSummary  = Array.isArray(record.publisherSummary) ? record.publisherSummary : [];
-  S.persons           = Array.isArray(record.persons) ? record.persons : [];
   S.profiles          = Array.isArray(record.profiles) ? record.profiles : [];
   S.events            = Array.isArray(record.events)   ? record.events   : [];
   S.themes            = Array.isArray(record.themes)  ? record.themes  : [];
@@ -9956,8 +10066,6 @@ function _loadRecordIntoSessionWork(record) {
   refreshUsageBadge();
   const haSecImp = document.getElementById('historicalAccountSection');
   const haTxtImp = document.getElementById('historicalAccountText');
-  if (haSecImp) haSecImp.style.display = S.historicalAccount ? '' : 'none';
-  if (haTxtImp && S.historicalAccount) haTxtImp.textContent = S.historicalAccount;
 
   // ── Metadata fields ─────────────────────────────────────────
   const ipSrc = document.getElementById('ipSource');
@@ -9978,7 +10086,7 @@ function _loadRecordIntoSessionWork(record) {
   refreshGenerateBtn();
   setTimeout(updateCombinedBtn, 50); // ensure DOM is updated
 
-  // Sync the generate results iframe to the current S.jsonLD state
+  // Sync the generate results iframe to the current null state
   syncGenerateIframe();
 
   // Clear chat history so conversation starts fresh for this record
@@ -9996,7 +10104,7 @@ function _loadRecordIntoSessionWork(record) {
   showTab('extract', document.querySelector('.tab'));
   const extractScroll = document.getElementById('extractScroll');
   if (extractScroll) extractScroll.scrollTop = 0;
-  setStatus('ok', `Imported: ${m.title || record.id} · ${S.extractedImages.length} item${S.extractedImages.length!==1?'s':''} loaded`);
+  setStatus('ok', '');
 }
 let _wizIdx = 0;
 let _wizSkipped = new Set();
@@ -10487,6 +10595,23 @@ function switchAnalysisSubTab(tab) {
   }
 }
 
+// Global helper: linkify "Item N" references in conflict statements → opens edit modal
+function linkifyConflictStmt(text) {
+  const escStr = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Match formats the AI actually generates:
+  //   "Item N — ..."         (schema-instructed format)
+  //   "(Item number N) ..."  (alternate format)
+  //   "Item N: ..." etc
+  return escStr(String(text || '')).replace(/Item\s+(?:number\s+)?(\d+)/gi, function(_, n) {
+    const idx = S.extractedImages.findIndex(img => (img.seqNum || 0) === parseInt(n, 10));
+    const targetIdx = idx >= 0 ? idx : parseInt(n, 10) - 1;
+    return '<a href="javascript:void(0)" onclick="openItemEditModal(' + targetIdx + ', {hideDelete:true})"' 
+      + ' title="Open Item ' + n + '"' 
+      + ' style="color:var(--aml);font-weight:600;text-decoration:underline dotted;cursor:pointer">' 
+      + 'Item ' + n + ' \u2197</a>';
+  });
+}
+
 function renderConflictsSubpane() {
   const cd = document.getElementById('conflictsDisplay');
   const statusEl = document.getElementById('conflictsStatus');
@@ -10548,7 +10673,7 @@ function renderConflictsSubpane() {
       const cardOpacity = '';
       const sevSt = c._resolved ? 'text-decoration:line-through;color:#2e7d32;border-color:#2e7d32;background:rgba(170,255,68,.1);' : `color:${col};border:1px solid ${col};background:${col}18;`;
       const titCol = c._resolved ? '#2e7d32' : 'var(--aml)';
-      const resolvedBadge = c._resolved ? ` <span style="color:#2e7d32;font-size:15px">✔ Resolved</span>` : '';
+      const resolvedBadge = c._resolved ? ` <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px">✔ Resolved</span>` : '';
       return `<div id="conflict-card-${i}" style="background:var(--s3);border:1px solid var(--bd);
                    border-left:3px solid ${borderCol};border-radius:3px;padding:11px 13px;margin-bottom:8px;${cardOpacity}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -10564,11 +10689,11 @@ function renderConflictsSubpane() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
           <div style="background:rgba(224,85,85,.07);border:1px solid rgba(224,85,85,.25);border-radius:2px;padding:8px 10px">
             <div style="font-size:13px;color:#c84444;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Statement A</div>
-            <div style="font-size:17px;color:var(--tx);line-height:1.55">${esc(c.item1)}</div>
+            <div style="font-size:17px;color:var(--tx);line-height:1.55">${linkifyConflictStmt(c.item1)}</div>
           </div>
           <div style="background:rgba(224,85,85,.07);border:1px solid rgba(224,85,85,.25);border-radius:2px;padding:8px 10px">
             <div style="font-size:13px;color:#c84444;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Statement B</div>
-            <div style="font-size:17px;color:var(--tx);line-height:1.55">${esc(c.item2)}</div>
+            <div style="font-size:17px;color:var(--tx);line-height:1.55">${linkifyConflictStmt(c.item2)}</div>
           </div>
         </div>
         <div style="font-size:17px;color:var(--txd);line-height:1.55;font-style:italic;border-top:1px solid var(--bd);padding-top:6px">${esc(c.explanation)}</div>
@@ -10592,6 +10717,7 @@ function deleteConflict(i) {
   markDirty();
   invalidateConflicts();
   renderConflictsSubpane();
+  refreshSourceTabButtons();
   setStatus('ok', `Conflict removed · ${S._conflicts.length} remaining`);
 }
 
@@ -10912,6 +11038,9 @@ function stopGenerateStatusMessages() {
   if (frameWrap) frameWrap.style.visibility = '';
 }
 
+// ── JSON-LD Generation — runs after main analysis ────────────
+// Takes already-extracted structured data and formats it as Schema.org JSON-LD
+
 function renderGenerateResults() {
   stopGenerateStatusMessages();
   const frame   = document.getElementById('generateResultsFrame');
@@ -10952,6 +11081,7 @@ table{table-layout:fixed;width:100%!important;word-break:break-word}
   );
   // Use srcdoc — blob: URLs are blocked by CSP in sandboxed environments
   frame.srcdoc = html;
+  frame._recordId = S.lastSavedId || null;  // stamp so stale detection works
   frame._resultsBlobUrl = null;
   if (spinner) spinner.style.display = 'none';
   if (openBtn) openBtn.style.display = '';
@@ -10979,9 +11109,25 @@ function renderTimeline() {
   }
   section.style.display = '';
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Format source — if it starts with "Item N" make it a clickable link
+  const fmtSource = src => {
+    if (!src) return '';
+    const m = src.match(/^(Item\s+(\d+))(.*)/i);
+    if (m) {
+      const idx = S.extractedImages.findIndex(img => (img.seqNum || 0) === parseInt(m[2], 10));
+      const targetIdx = idx >= 0 ? idx : parseInt(m[2], 10) - 1;
+      return `<a href="javascript:void(0)"
+        onclick="openItemEditModal(${targetIdx})"
+        title="Open Item ${m[2]}"
+        style="color:var(--aml);text-decoration:underline dotted;cursor:pointer;font-size:0.95em">${esc(m[1])} ↗</a>${esc(m[3])}`;
+    }
+    return esc(src);
+  };
+
   list.innerHTML = S.timeline.map((entry, i) => {
     const isInferred = (entry.certainty||'').toLowerCase() === 'inferred';
-    return `<div style="display:flex;gap:0;{i < S.timeline.length-1 ? '1px solid var(--bd)' : 'none'}">
+    return `<div style="display:flex;gap:0;border-bottom:${i < S.timeline.length-1 ? '1px solid var(--bd)' : 'none'}">
       <div style="flex-shrink:0;width:120px;padding:9px 10px;font-size:15px;color:${isInferred ? 'var(--txd)' : 'var(--aml)'};border-right:1px solid var(--bd);
                   font-style:${isInferred ? 'italic' : 'normal'}">
         ${esc(entry.date||'')}
@@ -10990,6 +11136,7 @@ function renderTimeline() {
       <div style="flex:1;padding:9px 12px;min-width:0">
         <div style="font-size:18px;color:var(--tx);font-weight:500;margin-bottom:3px">${esc(entry.label||'')}</div>
         <div style="font-size:15px;color:var(--txd);line-height:1.5">${esc(entry.snippet||'')}</div>
+        ${entry.source ? `<div style="font-size:13px;color:var(--txf);margin-top:4px;font-style:italic">${fmtSource(entry.source)}</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -11002,13 +11149,20 @@ function renderGenerateSubpane() {
   const btnHtml  = document.getElementById('btnHtmlToggle');
   _jsonHtmlMode  = false;
   if (overlay) overlay.style.display = 'none';
-  if (S.jsonLD) {
-    // Render if iframe is blank (record just loaded or reset)
-    const needsRender = !frame.srcdoc || frame.srcdoc === '';
+
+  const hasResults = !!(S.events?.length || S.themes?.length || S.lastGenerateAt);
+
+  if (hasResults) {
+    // Re-render if: frame is blank, or content belongs to a different record
+    const frameRecordId = frame._recordId || null;
+    const currentId     = S.lastSavedId   || null;
+    const needsRender   = !frame.srcdoc || frame.srcdoc === '' || frameRecordId !== currentId;
     if (needsRender) renderGenerateResults();
     if (spinner) spinner.style.display = 'none';
-    if (btnHtml) { btnHtml.style.display = ''; btnHtml.textContent = '🌐 HTML'; }
+    if (btnHtml) btnHtml.style.display = 'none';
   } else {
+    // Clear stale content from previous record
+    if (frame.srcdoc && frame.srcdoc !== '') { frame.srcdoc = ''; frame._recordId = null; }
     if (spinner) {
       spinner.style.display = 'flex';
       const msg = spinner.querySelector('span');
@@ -11038,7 +11192,7 @@ async function toggleJsonHtmlView() {
     spinner.style.display = 'flex';
     frame.srcdoc = ''; // clear any cached content
     try {
-      frame.srcdoc = buildJsonHtml(S.jsonLD);
+      frame.srcdoc = buildJsonHtml(null);
     } catch(err) {
       frame.srcdoc = `<html><body style="font-family:sans-serif;padding:20px;color:#c00">Render failed: ${err.message}</body></html>`;
     } finally {
@@ -11165,7 +11319,7 @@ function buildJsonHtml(obj) {
   }
 
   // ── Persons ────────────────────────────────────────────────
-  const personsData = (S.persons && S.persons.length) ? S.persons : [];
+  const personsData = [];
   if (personsData.length) {
     body += `<h2 style="font-size:22px;color:#1a2e42;margin:28px 0 10px;padding-bottom:4px">👤 Persons (${personsData.length})</h2>`;
     body += `<table style="width:100%;border-collapse:collapse;font-size:18px">
@@ -11204,13 +11358,6 @@ function buildJsonHtml(obj) {
     });
   }
 
-  // ── AI Generated Historical Account ────────────────────────
-  if (S.historicalAccount) {
-    body += `<h2 style="font-size:22px;color:#1a2e42;margin:28px 0 10px;padding-bottom:4px">📜 AI Generated Historical Account</h2>`;
-    const paras = S.historicalAccount.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
-    body += paras.map(p => `<p style="font-family:Georgia,serif;line-height:1.85;color:#1a2e42;margin:0 0 14px">${e(p.replace(/\n/g,' '))}</p>`).join('');
-  }
-
   // ── Publishers ─────────────────────────────────────────────
   if (S.publisherSummary && S.publisherSummary.length) {
     body += `<h2 style="font-size:22px;color:#1a2e42;margin:28px 0 10px;padding-bottom:4px">🗞 Publishers</h2>`;
@@ -11243,6 +11390,16 @@ function buildJsonHtml(obj) {
     timelineData.forEach((entry, i) => {
       const isInf = (entry.certainty||'').toLowerCase() === 'inferred';
       const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
+      // Format source — link Item N references to openItem()
+      const src = entry.source || '';
+      const srcHtml = (() => {
+        const m = src.match(/^(Item\s+(\d+))(.*)/i);
+        if (m) {
+          return `<a href="javascript:void(0)" onclick="openItem(${m[2]})" title="Open Item ${m[2]}"
+            style="color:#1a5a8e;text-decoration:underline dotted;cursor:pointer">${e(m[1])} ↗</a>${e(m[3])}`;
+        }
+        return e(src);
+      })();
       body += `<tr style="background:${bg}">
         <td style="padding:7px 10px;vertical-align:top;font-size:17px;
              color:${isInf?'#7a9ab8':'#1a4a8e'};font-style:${isInf?'italic':'normal'};white-space:nowrap">${e(entry.date||'')}</td>
@@ -11250,7 +11407,7 @@ function buildJsonHtml(obj) {
         <td style="padding:7px 10px;vertical-align:top;color:#555;line-height:1.5">${e(entry.snippet||'')}</td>
         <td style="padding:7px 10px;vertical-align:top;font-size:15px;
              color:${isInf?'#c84444':'#2a8a55'}">${e(entry.certainty||'')}</td>
-        <td style="padding:7px 10px;vertical-align:top;color:#666;font-size:17px;font-style:italic">${e(entry.source||'')}</td>
+        <td style="padding:7px 10px;vertical-align:top;color:#666;font-size:17px;font-style:italic">${srcHtml}</td>
       </tr>`;
     });
     body += `</tbody></table>`;
@@ -11275,7 +11432,7 @@ function openJsonLdModal() {
   document.getElementById('jsonldModalFrame').style.display = 'none';
   _modalHtmlMode = false;
   const btn = document.getElementById('btnModalHtmlToggle');
-  if (btn) { btn.style.display = S.jsonLD ? '' : 'none'; btn.textContent = '🌐 HTML'; }
+  if (btn) { btn.style.display = null ? '' : 'none'; btn.textContent = '🌐 HTML'; }
   document.getElementById('jsonldModal').classList.add('open');
 }
 
@@ -11294,7 +11451,7 @@ async function toggleModalJsonHtmlView() {
     spinner.style.display = 'flex';
     iframe.srcdoc = ''; // clear cache
     try {
-      iframe.srcdoc = buildJsonHtml(S.jsonLD);
+      iframe.srcdoc = buildJsonHtml(null);
     } catch(err) {
       iframe.srcdoc = `<html><body style="font-family:sans-serif;padding:20px;color:#c00">Render failed: ${err.message}</body></html>`;
     } finally {
@@ -11368,40 +11525,55 @@ function wizRender() {
     resolvedBanner = document.createElement('div');
     resolvedBanner.id = 'wizResolvedBanner';
     resolvedBanner.style.cssText = 'background:rgba(170,255,68,.1);border:1px solid #2e7d32;border-radius:3px;padding:8px 12px;font-size:15px;color:#2e7d32;margin-bottom:4px';
-    resolvedBanner.textContent = '✔ This conflict was previously resolved — you can apply another correction or skip.';
+    resolvedBanner.textContent = '✔ This conflict was previously resolved.';
     // Insert before the two-column statements div
     const stmtGrid = document.getElementById('wizItem1').closest('div[style*="grid"]');
     if (stmtGrid) stmtGrid.parentNode.insertBefore(resolvedBanner, stmtGrid);
   }
   resolvedBanner.style.display = c._resolved ? '' : 'none';
 
-  // Content
-  document.getElementById('wizItem1').textContent       = c.item1       || '';
-  document.getElementById('wizItem2').textContent       = c.item2       || '';
+  // Content — linkify (Item number N) pattern in statements
+  document.getElementById('wizItem1').innerHTML     = linkifyConflictStmt(c.item1       || '');
+  document.getElementById('wizItem2').innerHTML     = linkifyConflictStmt(c.item2       || '');
   document.getElementById('wizExplanation').textContent = c.explanation || '';
 
   // Nav buttons
   document.getElementById('wizPrev').disabled = _wizIdx === 0;
   document.getElementById('wizNext').disabled = _wizIdx === total - 1;
 
-  // Populate item selector
-  const sel = document.getElementById('wizTargetItem');
-  sel.innerHTML = S.extractedImages.map((img, i) => {
-    const num = img.seqNum || (i+1);
-    const cap = img.caption || `Item ${num}`;
-    return `<option value="${i}">Item Number ${num}${cap ? ' — ' + cap.substring(0,40) : ''}</option>`;
-  }).join('');
-  document.getElementById('wizItemSelector').style.display =
-    S.extractedImages.length > 1 ? '' : 'none';
+  // Always hide "Apply Correction To" section, Apply button, and Skip button (for now)
+  const wizItemSelector = document.getElementById('wizItemSelector');
+  if (wizItemSelector) wizItemSelector.style.display = 'none';
+  const wizApplyBtn = document.getElementById('wizApply');
+  if (wizApplyBtn) wizApplyBtn.style.display = 'none';
+  const wizSkipBtn = document.getElementById('wizSkipBtn');
+  if (wizSkipBtn) wizSkipBtn.style.display = 'none';
+
+  // Show Resolve button only when conflict is not yet resolved
+  const wizResolveBtn = document.getElementById('wizResolveBtn');
+  if (wizResolveBtn) wizResolveBtn.style.display = c._resolved ? 'none' : '';
+
+  // Cross out severity badge if resolved
+  sevEl.style.textDecoration = c._resolved ? 'line-through' : '';
+  sevEl.style.opacity        = c._resolved ? '0.5' : '';
 
   // Reset suggestion area
   document.getElementById('wizSuggestion').style.display = 'none';
   document.getElementById('wizSuggestion').value = '';
-  document.getElementById('wizSuggestLoading').style.display = 'flex';
+  document.getElementById('wizSuggestLoading').style.display = 'none';
   document.getElementById('wizSuggestStatus').textContent = '';
   document.getElementById('wizApply').disabled = true;
 
-  // Fetch AI suggestion
+  // Skip AI suggestion if already resolved — no need to re-process
+  if (c._resolved) {
+    document.getElementById('wizSuggestStatus').textContent =
+      c._resolution ? `Resolution: ${c._resolution}` : '✔ Already resolved';
+    document.getElementById('wizSuggestStatus').style.color = 'var(--gr)';
+    return;
+  }
+
+  // Fetch AI suggestion for unresolved conflicts
+  document.getElementById('wizSuggestLoading').style.display = 'flex';
   wizGetSuggestion(c);
 }
 
@@ -11445,6 +11617,18 @@ function wizNav(dir) {
   wizRender();
 }
 
+function wizResolveConflict() {
+  const c = S._conflicts[_wizIdx];
+  if (!c || c._resolved) return;
+  c._resolved   = true;
+  c._resolution = 'Manually resolved via conflict wizard';
+  markDirty();
+  refreshSourceTabButtons();
+  renderConflictsSubpane();
+  // Update wizard UI immediately without closing
+  wizRender();
+}
+
 function wizSkip() {
   _wizSkipped.add(_wizIdx);
   if (_wizIdx < S._conflicts.length - 1) {
@@ -11461,7 +11645,7 @@ function markConflictResolved(idx) {
   if (titleEl && !titleEl.dataset.resolved) {
     titleEl.dataset.resolved = '1';
     titleEl.style.color = '#2e7d32';
-    titleEl.innerHTML += ' <span style="color:#2e7d32;font-size:15px;font-style:normal">✔ Resolved</span>';
+    titleEl.innerHTML += ' <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px;font-style:normal">✔ Resolved</span>';
   }
   if (cardEl) {
     cardEl.style.borderLeftColor = '#2e7d32';
@@ -11812,15 +11996,12 @@ function buildRecord() {
     id:'rec_'+Date.now(), savedAt:new Date().toISOString(),
     croppedImage:S.croppedURL, selectionCoords:S.selN,
     extractedText:gatherAllText(),
-    schemaOrgAiAnalysis: S.jsonLD || null,
-    historicalAccount:   S.historicalAccount  || null,
+    
     historianAnalysis:   S.historianAnalysis   || null,
-    narrativeRecon:      S.narrativeRecon      || null,
     structuredAnalysis:  S.structuredAnalysis  || null,
     tagClusters:         S.tagClusters          || null,
     tagDiagram:          S.tagDiagram           || null,
     timeline:            S.timeline.length ? S.timeline : null,
-    persons:             S.persons.length  ? S.persons  : null,
     profiles:            S.profiles.length ? S.profiles : null,
     events:              S.events.length   ? S.events   : null,
     themes:              S.themes.length   ? S.themes   : null,
@@ -12297,14 +12478,6 @@ function openSaveModal() {
       </div>`;
     })() : ''}
 
-    ${r.historicalAccount ? `
-    <div class="pv-section">
-      <div class="pv-section-title">📜 AI Generated Historical Account</div>
-      <div style="font-family:'Georgia',serif;font-size:21px;line-height:1.85;color:#1a2e42;
-           background:#eef5fb;border:1px solid #b0cce0;border-left:3px solid #c8920a;
-           border-radius:2px;padding:14px 16px">${paragraphsHtmlEsc(r.historicalAccount)}</div>
-    </div>` : ''}
-
     ${r.timeline?.length ? `
     <div class="pv-section">
       <div class="pv-section-title">📅 Chronological Timeline</div>
@@ -12387,7 +12560,7 @@ async function confirmSave() {
   // Re-enable Analysis and Conflicts tabs if analysis has been run
   const _jtb = document.getElementById('jsonldTabBtn');
   const _ctb = document.getElementById('conflictsTabBtn');
-  if (_jtb && S.jsonLD) _jtb.disabled = false;
+  if (_jtb && null) _jtb.disabled = false;
   if (_ctb) _ctb.disabled = false;
 
   setStatus('ok', `Record saved`);
@@ -12447,16 +12620,12 @@ function continueEditing() {
   renderCits();
 
   // ── Restore JSON-LD ─────────────────────────────────────────
-  S.jsonLD = record.schemaOrgAiAnalysis || null;
-  S.historicalAccount  = record.historicalAccount  || '';
   S.historianAnalysis   = record.historianAnalysis   || '';
-  S.narrativeRecon      = record.narrativeRecon      || '';
   S.structuredAnalysis  = record.structuredAnalysis  || '';
   S.tagClusters         = record.tagClusters         || null;
   S.tagDiagram          = record.tagDiagram          || '';
   S.timeline          = Array.isArray(record.timeline) ? record.timeline : [];
   S.publisherSummary  = Array.isArray(record.publisherSummary) ? record.publisherSummary : [];
-  S.persons           = Array.isArray(record.persons) ? record.persons : [];
   S.profiles          = Array.isArray(record.profiles) ? record.profiles : [];
   S.events            = Array.isArray(record.events)   ? record.events   : [];
   S.themes            = Array.isArray(record.themes)  ? record.themes  : [];
@@ -12525,11 +12694,11 @@ function continueEditing() {
       }))
     : [];
   renderExtractedImages();
-  if (S.jsonLD) {
-    document.getElementById('jsonldOut').value = JSON.stringify(S.jsonLD, null, 2);
+  if (false) {
+    document.getElementById('jsonldOut').value = JSON.stringify(null, null, 2);
     const cb = document.getElementById('btnCopyJsonLd');
     if (cb) cb.disabled = false;
-    const pc = countType(S.jsonLD,'Person'), ec = countType(S.jsonLD,'Event');
+    const pc = countType(null,'Person'), ec = countType(null,'Event');
     const len = document.getElementById('jsonldOut').value.length;
     document.getElementById('jsonldStatus').textContent = `${pc} people · ${ec} events · ${len.toLocaleString()} chars`;
     document.getElementById('jsonldTabBtn').textContent = 'Analysis';
@@ -12555,7 +12724,7 @@ function continueEditing() {
         const sev = (c.severity||'medium').toLowerCase();
         const col = sevColor[sev] || sevColor.medium;
         const resolvedBadge = c._resolved
-          ? ' <span style="color:#2e7d32;font-size:15px">✔ Resolved</span>'
+          ? ' <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px">✔ Resolved</span>'
           : '';
         const borderCol = c._resolved ? '#2e7d32' : col;
         const cardOpacity = '';
@@ -12574,11 +12743,11 @@ function continueEditing() {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
             <div style="background:rgba(224,85,85,.07);border:1px solid rgba(224,85,85,.25);border-radius:2px;padding:8px 10px">
               <div style="font-size:13px;color:#c84444;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Statement A</div>
-              <div style="font-size:17px;color:var(--tx);line-height:1.55">${esc(c.item1)}</div>
+              <div style="font-size:17px;color:var(--tx);line-height:1.55">${linkifyConflictStmt(c.item1)}</div>
             </div>
             <div style="background:rgba(224,85,85,.07);border:1px solid rgba(224,85,85,.25);border-radius:2px;padding:8px 10px">
               <div style="font-size:13px;color:#c84444;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Statement B</div>
-              <div style="font-size:17px;color:var(--tx);line-height:1.55">${esc(c.item2)}</div>
+              <div style="font-size:17px;color:var(--tx);line-height:1.55">${linkifyConflictStmt(c.item2)}</div>
             </div>
           </div>
           <div style="font-size:17px;color:var(--txd);line-height:1.55;font-style:italic;
@@ -12599,14 +12768,14 @@ function continueEditing() {
       </div>`;
 
     // Show conflicts display, hide textarea (unless JSON-LD also needs showing)
-    if (!S.jsonLD) {
+    if (!null) {
       cd.style.display  = '';
     }
 
     const unresolved = S._conflicts.filter(c => !c._resolved).length;
     document.getElementById('jsonldStatus').textContent =
       unresolved ? `⚠ ${unresolved} conflict${unresolved!==1?'s':''} remaining` : '';
-    if (!S.jsonLD) {
+    if (!null) {
       document.getElementById('jsonldTabBtn').textContent =
         'Analysis';
     }
@@ -13004,7 +13173,7 @@ function syncGenerateIframe() {
   if (openBtn) openBtn.style.display = 'none';
   // Show correct spinner state
   if (spinner) {
-    if (S.jsonLD) {
+    if (false) {
       spinner.style.display = 'none';
     } else {
       spinner.style.display = 'flex';
@@ -13493,7 +13662,7 @@ function buildPrintHtml(r, forPane=false) {
   const keywordNarrativeHtml = r.keywordNarrative
     ? '<div class="card full-width" style="margin-top:14pt;border-left:4px solid #3a7a5a">'
       + '<div class="card-title" style="color:#1a5a3a">&#x1F50D; Keyword Analysis</div>'
-      + '<div style="font-family:Georgia,serif;font-size:12pt;line-height:1.85;color:#1a2e42;padding:4pt 0">'
+      + '<div style="font-size:11pt;line-height:1.85;color:#1a2e42;padding:4pt 0">'
       + r.keywordNarrative.split(/\n\n+/).map(function(p){ return p.trim() ? '<p style="margin:0 0 14pt">' + e(p.trim()) + '</p>' : ''; }).join('')
       + '</div></div>'
     : '';
@@ -13888,9 +14057,9 @@ function buildPrintHtml(r, forPane=false) {
   .card.full-width   { display: block; }
 
   .card-title {
-    font-family: 'Courier New';
+    font-family: inherit;
     font-size: 7.8pt; text-transform: uppercase; letter-spacing: .1em;
-    color: #4a9ede; margin-bottom: 12pt; font-weight: 500;
+    color: #4a9ede; margin-bottom: 12pt; font-weight: 600;
   }
   .card-title.amber { color: #b8920a; }
   .card-title.green { color: #2a9a55; }
@@ -14170,8 +14339,9 @@ function openItem(seqNum) {
     try { window.parent.postMessage({ type: 'open-item', seqNum: seqNum }, '*'); return; } catch(e) {}
   }
 
-  var item = _ITEMS.find(function(i){ return i.seqNum === seqNum; });
-  if (!item) { alert('Item \u2116' + seqNum + ' not found in this document.'); return; }
+  var item = _ITEMS.find(function(i){ return Number(i.seqNum) === Number(seqNum); });
+  if (!item && seqNum > 0 && seqNum <= _ITEMS.length) item = _ITEMS[seqNum - 1];
+  if (!item) { console.warn('openItem: Item \u2116' + seqNum + ' not found'); return; }
 
   var existing = document.getElementById('_roModal');
   if (existing) existing.remove();
@@ -14345,14 +14515,14 @@ ${r.structuredAnalysis ? `
         .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
         .replace(/\*(.+?)\*/g,'<em>$1</em>')
         .replace(/`([^`]+)`/g,'<code style="font-size:7.5pt;background:#e8f0f8;padding:1pt 3pt;border-radius:2pt">$1</code>')
-        // Style [Item N] and [Items N, M] as citation badges — no background, black text
+        // Style [Item N] and [Items N, M] as citation badges
         .replace(/\[Items?\s*([\d,\s]+)\]/gi, function(_, nums) {
           return nums.trim().replace(/[^0-9,\s]/g,'').split(/[,\s]+/).filter(Boolean).map(function(n) {
-            return '<span onclick="openItem(' + n + ')" title="Open Item ' + n + '" ' +
+            return '<a href="javascript:void(0)" onclick="openItem(' + n + ')" title="Open Item ' + n + '" ' +
               'style="cursor:pointer;font-size:7pt;font-weight:700;' +
               'color:#000;padding:1pt 5pt;' +
               'margin-left:3pt;vertical-align:middle;white-space:nowrap;text-decoration:underline;' +
-              'text-decoration-color:rgba(0,0,0,.4)">&#x2116;&thinsp;' + n + '</span>';
+              'text-decoration-color:rgba(0,0,0,.4)">&#x2116;&thinsp;' + n + '</a>';
           }).join('');
         });
     }
@@ -14511,74 +14681,40 @@ ${ldHtml ? `
 ${r.gpsConflicts?.conflicts?.length ? (() => {
   const conflicts = r.gpsConflicts.conflicts;
   const resolvedCount = r.gpsConflicts.resolvedCount || 0;
+  // Linkify "(Item number N)" in statements — opens read-only modal via openItem()
+  const linkStmt = s => {
+    return e(String(s||'')).replace(/\(Item number (\d+)\)/gi, function(_, n) {
+      return '<a href="javascript:void(0)" onclick="openItem(' + n + ')" title="Open Item ' + n + '" '
+        + 'style="color:#1a5a8e;font-weight:600;text-decoration:underline dotted;cursor:pointer">'
+        + '(Item number ' + n + ' \u2197)</a>';
+    });
+  };
   return `<div class="card full-width" style="margin-top:14pt;border-left:4px solid #c84444">
   <div class="card-title" style="color:#8a2020">GPS-4 Conflicting Evidence · ${conflicts.length} found · ${resolvedCount} resolved</div>
   <p style="font-size:8.4pt;color:#3a5878;margin-bottom:8pt">${e(r.gpsConflicts.summary||'')}</p>
   ${conflicts.map((c,i) => `
   <div style="margin-bottom:8pt;padding:7pt 9pt;border:1pt solid ${c.resolved?'#3dba72':'#e8c0b0'};
        background:${c.resolved?'rgba(61,186,114,.05)':'rgba(224,85,85,.04)'};border-radius:2pt">
-    <div style="font-family:Courier;font-size:8.4pt;margin-bottom:4pt">
+    <div style="font-size:8.4pt;margin-bottom:4pt">
       <strong style="color:${c.resolved?'#1a6a40':'#8a2020'}">${i+1}. ${e(c.subject)}</strong>
-      ${c.resolved?'<span style="color:#1a8a40"> ✔ Resolved</span>':''}
+      ${c.resolved?'<span style="color:#1a8a40;font-weight:700"> ✔ Resolved</span>':''}
       <span style="color:#888;margin-left:6pt">[${(c.severity||'').toUpperCase()}]</span>
     </div>
     <div style="display:flex;gap:8pt;margin-bottom:4pt">
-      <div style="flex:1;font-size:8.4pt;color:#3a3030"><em>A:</em> ${e(c.item1)}</div>
-      <div style="flex:1;font-size:8.4pt;color:#3a3030"><em>B:</em> ${e(c.item2)}</div>
+      <div style="flex:1;font-size:8.4pt;color:#3a3030"><em>A:</em> ${linkStmt(c.item1)}</div>
+      <div style="flex:1;font-size:8.4pt;color:#3a3030"><em>B:</em> ${linkStmt(c.item2)}</div>
     </div>
     <div style="font-size:8.4pt;color:#555;font-style:italic">${e(c.explanation)}</div>
     ${c.resolved && c.resolution ? `
     <div style="margin-top:6pt;padding:5pt 8pt;background:rgba(61,186,114,.06);
          border:1pt solid rgba(61,186,114,.3);border-radius:2pt">
-      <div style="font-family:Courier;font-size:7.8pt;color:#1a6a40;
+      <div style="font-size:7.8pt;color:#1a6a40;
            text-transform:uppercase;letter-spacing:.07em;margin-bottom:3pt">✔ Accepted Resolution</div>
       <div style="font-size:8.4pt;color:#1a3030;line-height:1.55">${e(c.resolution)}</div>
     </div>` : ''}
   </div>`).join('')}
 </div>`;
 })() : ''}
-
-${r.historicalAccount ? `
-<div class="card full-width" style="margin-top:14pt;border-left:4px solid #c8920a">
-  <div class="card-title" style="color:#7a5500">📜 AI Generated Historical Account</div>
-  <div class="ha-columns">
-    ${paragraphsHtmlEsc(r.historicalAccount)}
-  </div>
-</div>` : ''}
-
-${r.narrativeRecon ? `
-<div class="card full-width" style="margin-top:14pt;border-left:4px solid #3a6a3a;background:#f6faf6">
-  <div class="card-title" style="color:#1a4a1a">🗞 Narrative Reconstruction</div>
-  <div style="font-size:7pt;text-transform:uppercase;
-              letter-spacing:.14em;color:#9aafc4;margin-bottom:10pt">
-    Historical journalism &nbsp;·&nbsp; Community life &nbsp;·&nbsp; Magazine feature style
-  </div>
-  <style>
-    .nr-body {
-      font-family: 'Georgia', serif;
-      font-size: 9.5pt;
-      line-height: 1.9;
-      color: #1a2e42;
-      text-align: justify;
-      hyphens: auto;
-      column-count: 2;
-      column-gap: 28pt;
-      column-rule: 1px solid #c0d8c0;
-    }
-    @media screen {
-      .nr-body { font-size: 16px !important; column-count: 2; }
-    }
-    @media (max-width: 600px) {
-      .nr-body { column-count: 1 !important; column-rule: none !important; }
-    }
-    @media print {
-      .nr-body { column-count: 2; }
-    }
-  </style>
-  <div class="nr-body">
-    ${r.narrativeRecon.split(/\n\n+/).filter(p=>p.trim()).map(p=>`<p style="margin:0 0 10pt;break-inside:avoid">${e(p.trim())}</p>`).join('')}
-  </div>
-</div>` : ''}
 
 ${r.historianAnalysis ? `
   <div class="card-title" style="color:#1a4a8e">🔍 Research Recommendations</div>
@@ -14999,8 +15135,8 @@ ${tagsHtml || r.keywordNarrative ? `
   <div style="margin-top:${tagsHtml ? '14pt' : '0'};padding-top:${tagsHtml ? '12pt' : '0'};
               ${tagsHtml ? 'border-top:1px solid #dde5ef;' : ''}">
     <div style="font-size:7.8pt;text-transform:uppercase;
-         letter-spacing:.1em;color:#b8920a;margin-bottom:8pt">&#x1F50D; Keyword Analysis</div>
-    <div style="font-family:'Georgia',serif;font-size:9.5pt;line-height:1.85;color:#1a2e42">
+         letter-spacing:.1em;color:#b8920a;margin-bottom:8pt;font-weight:600">&#x1F50D; Keyword Analysis</div>
+    <div style="font-size:9.5pt;line-height:1.85;color:#1a2e42">
       ${r.keywordNarrative.split(/\n\n+/).map(function(p){ return p.trim() ? '<p style="margin:0 0 14pt">' + e(p.trim()) + '</p>' : ''; }).join('')}
     </div>
     ${r.tagDiagram ? `
@@ -15359,7 +15495,7 @@ function resetForNext() {
   S.sel=null; S.selN=null; S.croppedURL=null;
   S.tags=[]; S.citations=[]; S.citSeq=0;
   S.queue=[]; S.qSeq=0;
-  S.jsonLD=null; S.extractedImages=[];
+  S.extractedImages=[];
   S.chatSessions=[];
   _expandedItems.clear();
   _editedItems.clear();
@@ -15424,11 +15560,8 @@ function resetForNext() {
   const bfc = document.getElementById('btnFixConflicts');
   if (bfc) bfc.style.display = 'none';
   S._conflicts = []; S._conflictSummary = '';
-  S.jsonLD = null;
-  S.historicalAccount = '';
   S.timeline = [];
   S.publisherSummary = [];
-  S.persons  = [];
   S.profiles = [];
   S.events   = [];
   S.themes            = [];
@@ -15651,4 +15784,4 @@ document.getElementById('fiJson').addEventListener('change', async function() {
 </button>
 
 </body>
-</html> 
+</html>
