@@ -2889,6 +2889,8 @@ function queueItemToExtractedImage(item) {
     sourceFileName: fn,
     sourceType
   });
+  // Trigger research significance toast after a short delay for render to complete
+  setTimeout(() => onItemAdded(S.extractedImages.length - 1), 300);
 }
 
 function nextSeqNum() {
@@ -3393,6 +3395,7 @@ function audioSave() {
   const addModal = document.getElementById('addImageModal');
   if (addModal) addModal.classList.remove('open');
   renderExtractedImages();
+  onItemAdded(S.extractedImages.length - 1);
   enableExtractBtn();
   showTab('extract', document.querySelector('.tab'));
   setStatus('ok', `Audio transcription saved · ${text.split(/\s+/).filter(Boolean).length} words`);
@@ -4167,6 +4170,7 @@ function acceptTextPaste() {
     sourceType:    'text-paste'
   });
   renderExtractedImages();
+  onItemAdded(S.extractedImages.length - 1);
 
   // Also keep hidden textarea in sync for doMetaScan
   document.getElementById('extracted').value = gatherAllText();
@@ -4356,6 +4360,7 @@ function loadImageFromUrl_accept(url) {
         sourceType: 'url-image'
       });
       renderExtractedImages();
+      onItemAdded(S.extractedImages.length - 1);
       enableExtractBtn();
       document.getElementById('btnAccept').style.display = 'none';
       setSaveVisible(true);
@@ -5294,6 +5299,7 @@ function createExtractedImageRecord(item) {
     sourceType
   });
   renderExtractedImages();
+  onItemAdded(S.extractedImages.length - 1);
   scrollToLastExtractedItem();
 }
 
@@ -6261,6 +6267,7 @@ function buildQueryContext() {
       if (img.caption) block += `: ${img.caption}`;
       if (img.citSource) block += ` [${img.citSource}]`;
       if (img.extractedText) block += `\n${img.extractedText.substring(0, 300)}`;
+      if (img.significance) block += `\nSignificance: ${img.significance}`;
       block += '\n';
     });
     parts.push({ record: null, block, wordCount: 0 });
@@ -8078,7 +8085,25 @@ function renderExtractedImages() {
       <textarea id="eicap-${i}">${esc(img.caption||'')}</textarea>
       <textarea id="eitxt-${i}">${esc(img.extractedText||'')}</textarea>
       <input id="eisrc-${i}" value="${esc(img.citSource||'')}">
-    </div>`;
+    </div>
+
+    ${img.significance ? `
+    <!-- Research significance panel -->
+    <div id="eisig-${i}"
+         style="border-top:1px solid var(--bd);background:var(--s2)">
+      <button onclick="event.stopPropagation();toggleSigPanel(${i})"
+              style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 10px;
+                     background:none;border:none;cursor:pointer;text-align:left">
+        <span style="font-size:13px;color:var(--am)">✦</span>
+        <span style="font-size:11px;color:var(--am);text-transform:uppercase;
+                     letter-spacing:.07em;font-weight:600">Research Significance</span>
+        <span id="eisig-chevron-${i}" style="font-size:11px;color:var(--txf);margin-left:auto">▸</span>
+      </button>
+      <div id="eisig-body-${i}"
+           style="display:none;padding:4px 12px 10px 26px;font-size:14px;
+                  color:var(--txd);line-height:1.6">${esc(img.significance)}</div>
+    </div>` : ''}`;
+
     strip.appendChild(row);
   });
 
@@ -8742,8 +8767,10 @@ function gatherAllText(maxChars = 400000) {
     const block = S.extractedImages.length > 1
       ? `=== Item Number ${num} ===` +
         (meta ? `\nMetadata: ${meta}` : '') +
-        (text ? `\nExtracted Text:\n${text}` : '')
-      : (meta ? `Metadata: ${meta}\n` : '') + text;
+        (text ? `\nExtracted Text:\n${text}` : '') +
+        (img.significance ? `\nResearch Significance: ${img.significance}` : '')
+      : (meta ? `Metadata: ${meta}\n` : '') + text +
+        (img.significance ? `\nResearch Significance: ${img.significance}` : '');
 
     parts.push(block);
   });
@@ -9920,7 +9947,8 @@ function _loadRecordIntoSessionWork(record) {
     kind:         img.kind         || 'text',
     ocrAt:        img.ocrAt        || null,
     sourceFileName: img.sourceFileName || '',
-    sourceType:     img.sourceType     || ''
+    sourceType:     img.sourceType     || '',
+    significance:   img.significance   || ''
   }));
 
   renderExtractedImages();
@@ -10721,7 +10749,153 @@ function deleteConflict(i) {
   setStatus('ok', `Conflict removed · ${S._conflicts.length} remaining`);
 }
 
-// ── Publisher extraction ──────────────────────────────────────
+function toggleSigPanel(i) {
+  const body    = document.getElementById('eisig-body-' + i);
+  const chevron = document.getElementById('eisig-chevron-' + i);
+  if (!body) return;
+  const open = body.style.display === 'none';
+  body.style.display    = open ? '' : 'none';
+  if (chevron) chevron.textContent = open ? '▾' : '▸';
+}
+
+// ── Research Significance Toast ───────────────────────────────
+let _toastTimer    = null;
+let _toastPaused   = false;
+let _toastDeadline = 0;  // when the timer expires (epoch ms)
+
+function showResearchToast(text) {
+  const toast  = document.getElementById('researchToast');
+  const textEl = document.getElementById('researchToastText');
+  const bar    = document.getElementById('researchToastBar');
+  const pauseBtn = document.getElementById('researchToastPause');
+  if (!toast || !textEl) return;
+
+  _toastPaused = false;
+  if (pauseBtn) { pauseBtn.textContent = '⏸'; pauseBtn.title = 'Pause'; }
+
+  textEl.textContent = text;
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+
+  const DURATION = 10000;
+  bar.style.transition = 'none';
+  bar.style.transform  = 'scaleX(1)';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    bar.style.transition = `transform ${DURATION}ms linear`;
+    bar.style.transform  = 'scaleX(0)';
+  }));
+
+  clearTimeout(_toastTimer);
+  _toastDeadline = Date.now() + DURATION;
+  _toastTimer = setTimeout(dismissResearchToast, DURATION);
+}
+
+function toggleResearchToastPause() {
+  const bar      = document.getElementById('researchToastBar');
+  const pauseBtn = document.getElementById('researchToastPause');
+  if (!bar) return;
+
+  if (_toastPaused) {
+    // Resume — restart timer with remaining time
+    const remaining = Math.max(500, _toastDeadline - Date.now());
+    bar.style.transition = `transform ${remaining}ms linear`;
+    bar.style.transform  = 'scaleX(0)';
+    clearTimeout(_toastTimer);
+    _toastTimer  = setTimeout(dismissResearchToast, remaining);
+    _toastDeadline = Date.now() + remaining;
+    _toastPaused = false;
+    if (pauseBtn) { pauseBtn.textContent = '⏸'; pauseBtn.title = 'Pause'; }
+  } else {
+    // Pause — freeze bar and cancel timer
+    const computed = window.getComputedStyle(bar);
+    bar.style.transition = 'none';
+    bar.style.transform  = computed.transform;
+    clearTimeout(_toastTimer);
+    _toastDeadline = Date.now() + Math.max(500, _toastDeadline - Date.now());
+    _toastPaused = true;
+    if (pauseBtn) { pauseBtn.textContent = '▶'; pauseBtn.title = 'Resume'; }
+  }
+}
+
+function dismissResearchToast() {
+  clearTimeout(_toastTimer);
+  _toastPaused = false;
+  const toast = document.getElementById('researchToast');
+  if (toast) toast.style.transform = 'translateX(-50%) translateY(140%)';
+}
+
+async function onItemAdded(idx) {
+  const img = S.extractedImages[idx];
+  if (!img) return;
+
+  // Only fire if we have content to analyze and an API key
+  const itemText = [img.caption, img.citSource, img.citDate, img.extractedText]
+    .filter(Boolean).map(s => s.trim()).join('\n').trim();
+  if (!itemText) return;
+  try { if (!getApiKey()) return; } catch(e) { return; }
+
+  // Show toast immediately with "Analyzing…"
+  showResearchToast('Analyzing…');
+
+  const recordCtx = S.extractedImages
+    .filter((_, i) => i !== idx)
+    .slice(0, 20)
+    .map((m, i) => `Item ${m.seqNum||i+1}: ${(m.caption||m.extractedText||'').substring(0,80)}`)
+    .join('\n');
+
+  const prompt =
+    `A genealogical researcher just added this item to their research record:\n\n` +
+    `--- NEW ITEM (Item ${img.seqNum||idx+1}) ---\n${itemText}\n\n` +
+    (recordCtx ? `--- OTHER ITEMS IN RECORD ---\n${recordCtx}\n\n` : '') +
+    `In 1-2 sentences, tell the researcher specifically why this item matters to their research — ` +
+    `what it establishes, confirms, or opens up. Be specific, reference actual names/dates/places from the item. ` +
+    `No preamble, no "This item", just start with the insight.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: apiHeaders(),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) { dismissResearchToast(); return; }
+    const data = await res.json();
+    const text = (data.content||[]).map(b => b.text||'').join('').trim();
+    if (text) {
+      showResearchToast(text);
+      // Store permanently in the item and inject panel into the card
+      const imgObj = S.extractedImages[idx];
+      if (imgObj) {
+        imgObj.significance = text;
+        markDirty();
+        // Inject significance panel into the live card without full re-render
+        const card = document.getElementById('eimg-' + idx);
+        if (card && !document.getElementById('eisig-' + idx)) {
+          const esc2 = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          const panel = document.createElement('div');
+          panel.id = 'eisig-' + idx;
+          panel.style.cssText = 'border-top:1px solid var(--bd);background:var(--s2)';
+          panel.innerHTML = `
+            <button onclick="event.stopPropagation();toggleSigPanel(${idx})"
+                    style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 10px;
+                           background:none;border:none;cursor:pointer;text-align:left">
+              <span style="font-size:13px;color:var(--am)">✦</span>
+              <span style="font-size:11px;color:var(--am);text-transform:uppercase;
+                           letter-spacing:.07em;font-weight:600">Research Significance</span>
+              <span id="eisig-chevron-${idx}" style="font-size:11px;color:var(--txf);margin-left:auto">▸</span>
+            </button>
+            <div id="eisig-body-${idx}"
+                 style="display:none;padding:4px 12px 10px 26px;font-size:14px;
+                        color:var(--txd);line-height:1.6">${esc2(text)}</div>`;
+          card.appendChild(panel);
+        }
+      }
+    } else dismissResearchToast();
+  } catch(e) {
+    dismissResearchToast();
+  }
+}
 function buildPublisherSummary() {
   const counts = {};
 
@@ -12060,6 +12234,7 @@ function buildRecord() {
       ...(img.sourceFileName ? { 'sourceFileName': img.sourceFileName } : {}),
       ...(img.sourceType     ? { 'sourceType':     img.sourceType     } : {}),
       ...(img.sourceUrl    ? { 'sameAs': img.sourceUrl, 'url': img.sourceUrl } : {}),
+      ...(img.significance ? { 'significance': img.significance } : {}),
       ...(img.citSource || img.citPublisher || img.citDate || img.citPage ? {
         'isPartOf': {
           '@type':         'Periodical',
@@ -13451,6 +13626,13 @@ function buildPrintHtml(r, forPane=false) {
               <div style="margin-top:6pt;border-top:1px solid #dde5ef;padding-top:6pt">
                 <div class="item-text-body" style="font-size:10pt;
                             line-height:1.7;color:#2a3a4a;white-space:pre-wrap">${e(imgText)}</div>
+              </div>` : ''}
+              ${img.significance ? `
+              <div style="margin-top:6pt;border-top:1px solid #dde5ef;padding-top:6pt;
+                          display:flex;gap:5pt;align-items:flex-start">
+                <span style="color:#c8920a;font-size:9pt;flex-shrink:0;margin-top:1pt">✦</span>
+                <div style="font-size:8.4pt;color:#5a4a1a;line-height:1.6;
+                            font-style:italic">${e(img.significance)}</div>
               </div>` : ''}
             </div>
           </div>
@@ -15782,6 +15964,34 @@ document.getElementById('fiJson').addEventListener('change', async function() {
                animation:floatPulse 2s ease-in-out infinite">
   💾 Save Record
 </button>
+
+<!-- Research significance toast -->
+<div id="researchToast" style="
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(140%);
+  max-width:520px;width:calc(100% - 32px);z-index:9000;
+  background:var(--s1);border:1px solid var(--am);border-radius:10px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);padding:14px 16px 12px;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1)">
+  <div style="display:flex;align-items:flex-start;gap:10px">
+    <span style="font-size:20px;flex-shrink:0;margin-top:1px;color:var(--am)">✦</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;color:var(--am);text-transform:uppercase;
+                  letter-spacing:.08em;font-weight:600;margin-bottom:5px">Research Significance</div>
+      <div id="researchToastText" style="font-size:15px;color:var(--tx);line-height:1.6">Analyzing…</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;margin-top:1px">
+      <button id="researchToastPause" onclick="toggleResearchToastPause()"
+              style="background:none;border:1px solid var(--bd);border-radius:3px;
+                     color:var(--txf);font-size:12px;cursor:pointer;padding:1px 6px;
+                     line-height:1.4" title="Pause">⏸</button>
+      <button onclick="dismissResearchToast()"
+              style="background:none;border:none;color:var(--txf);font-size:18px;
+                     cursor:pointer;padding:0;line-height:1">✕</button>
+    </div>
+  </div>
+  <div id="researchToastBar" style="height:2px;background:var(--am);border-radius:1px;
+       margin-top:10px;width:100%;transform-origin:left;transition:transform linear"></div>
+</div>
 
 </body>
 </html>
