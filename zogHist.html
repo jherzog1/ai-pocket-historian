@@ -11255,22 +11255,9 @@ function buildPublisherSummary() {
 }
 
 function renderEvents() {
+  // Events are merged into the timeline (Dates & Time References) — hide standalone section
   const section = document.getElementById('eventsSection');
-  const list    = document.getElementById('eventsList');
-  if (!section || !list) return;
-  const events = S.events || [];
-  if (!events.length) { section.style.display = 'none'; return; }
-  section.style.display = '';
-  list.innerHTML = events.map((ev, i) => `
-    <div style="padding:10px 12px;{i < events.length-1 ? '1px solid var(--bd)' : 'none'}">
-      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
-        ${ev.date ? `<span style="font-size:14px;color:var(--aml);flex-shrink:0">${esc(ev.date)}</span>` : ''}
-        <span style="font-size:18px;font-weight:600;color:var(--txd)">${esc(ev.name||'')}</span>
-        ${ev.location ? `<span style="font-size:14px;color:var(--txf)">${esc(ev.location)}</span>` : ''}
-      </div>
-      <div style="font-size:17px;color:var(--tx);line-height:1.6;font-family:'Georgia',serif">${esc(ev.summary||'')}</div>
-      ${ev.persons ? `<div style="font-size:14px;color:var(--txf);margin-top:4px">👤 ${esc(ev.persons)}</div>` : ''}
-    </div>`).join('');
+  if (section) section.style.display = 'none';
 }
 
 function renderProfiles() {
@@ -11593,39 +11580,68 @@ table{table-layout:fixed;width:100%!important;word-break:break-word}
   };
 }
 
+function _dateToSortKey(dateStr) {
+  if (!dateStr) return 99999999;
+  const s = String(dateStr);
+  const mo = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,jan:1,feb:2,mar:3,apr:4,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  let m;
+  m = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (m) return +m[1]*10000 + +m[2]*100 + +m[3];
+  m = s.match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i);
+  if (m) return +m[3]*10000 + (mo[m[1].toLowerCase()]||0)*100 + +m[2];
+  m = s.match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})/i);
+  if (m) return +m[2]*10000 + (mo[m[1].toLowerCase()]||0)*100;
+  m = s.match(/\b(\d{4})\b/);
+  if (m) return +m[1]*10000;
+  return 99999999;
+}
+
 function renderTimeline() {
-  const section = document.getElementById('timelineSection');
-  const list    = document.getElementById('timelineList');
+  const section   = document.getElementById('timelineSection');
+  const list      = document.getElementById('timelineList');
+  const evSection = document.getElementById('eventsSection');
+  if (evSection) evSection.style.display = 'none';
   if (!section || !list) return;
-  if (!S.timeline || !S.timeline.length) {
-    section.style.display = 'none';
-    return;
-  }
+
+  // Merge timeline entries and events, sort chronologically
+  const tlEntries = (S.timeline || []).map(e => ({ ...e, _isEvent: false }));
+  const evEntries = (S.events   || []).map(ev => ({
+    date:     ev.date    || '',
+    label:    ev.name    || '',
+    snippet:  [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+    certainty:'event',
+    source:   '',
+    _isEvent: true
+  }));
+  const combined = [...tlEntries, ...evEntries]
+    .sort((a, b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+
+  if (!combined.length) { section.style.display = 'none'; return; }
   section.style.display = '';
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // Format source — if it starts with "Item N" make it a clickable link
   const fmtSource = src => {
     if (!src) return '';
     const m = src.match(/^(Item\s+(\d+))(.*)/i);
     if (m) {
       const idx = S.extractedImages.findIndex(img => (img.seqNum || 0) === parseInt(m[2], 10));
       const targetIdx = idx >= 0 ? idx : parseInt(m[2], 10) - 1;
-      return `<a href="javascript:void(0)"
-        onclick="openItemEditModal(${targetIdx})"
-        title="Open Item ${m[2]}"
+      return `<a href="javascript:void(0)" onclick="openItemEditModal(${targetIdx})" title="Open Item ${m[2]}"
         style="color:var(--aml);text-decoration:underline dotted;cursor:pointer;font-size:0.95em">${esc(m[1])} ↗</a>${esc(m[3])}`;
     }
     return esc(src);
   };
 
-  list.innerHTML = S.timeline.map((entry, i) => {
+  list.innerHTML = combined.map((entry, i) => {
     const isInferred = (entry.certainty||'').toLowerCase() === 'inferred';
-    return `<div style="display:flex;gap:0;border-bottom:${i < S.timeline.length-1 ? '1px solid var(--bd)' : 'none'}">
-      <div style="flex-shrink:0;width:120px;padding:9px 10px;font-size:15px;color:${isInferred ? 'var(--txd)' : 'var(--aml)'};border-right:1px solid var(--bd);
+    const isEvent    = !!entry._isEvent;
+    return `<div style="display:flex;gap:0;border-bottom:${i < combined.length-1 ? '1px solid var(--bd)' : 'none'}">
+      <div style="flex-shrink:0;width:120px;padding:9px 10px;font-size:15px;
+                  color:${isInferred ? 'var(--txd)' : 'var(--aml)'};border-right:1px solid var(--bd);
                   font-style:${isInferred ? 'italic' : 'normal'}">
         ${esc(entry.date||'')}
-        ${isInferred ? `<div style="font-size:13px;color:var(--txf);margin-top:2px">inferred</div>` : ''}
+        ${isInferred ? `<div style="font-size:12px;color:var(--txf);margin-top:2px">inferred</div>` : ''}
+        ${isEvent    ? `<div style="font-size:11px;color:var(--txf);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">event</div>` : ''}
       </div>
       <div style="flex:1;padding:9px 12px;min-width:0">
         <div style="font-size:18px;color:var(--tx);font-weight:500;margin-bottom:3px">${esc(entry.label||'')}</div>
@@ -12979,17 +12995,26 @@ function openSaveModal() {
       </div>`;
     })() : ''}
 
-    ${r.timeline?.length ? `
-    <div class="pv-section">
-      <div class="pv-section-title">📅 Chronological Timeline</div>
+    ${(r.timeline?.length || r.events?.length) ? (() => {
+      const _evAsTimeline = (r.events||[]).map(ev => ({
+        date: ev.date||'', label: ev.name||'',
+        snippet: [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+        certainty: 'event', source: '', _isEvent: true
+      }));
+      const _merged = [...(r.timeline||[]).map(e=>({...e})), ..._evAsTimeline]
+        .sort((a,b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+      return `<div class="pv-section">
+      <div class="pv-section-title">🕐 Dates & Time References</div>
       <div style="background:#eef5fb;border:1px solid #b0cce0;border-radius:2px;overflow:hidden">
-        ${r.timeline.map((entry, i) => {
+        ${_merged.map((entry, i) => {
           const isInferred = (entry.certainty||'').toLowerCase() === 'inferred';
-          return `<div style="display:flex;gap:0;{i < r.timeline.length-1 ? '1px solid #c8ddef' : 'none'}">
+          const isEvent    = !!entry._isEvent;
+          return `<div style="display:flex;gap:0;border-bottom:${i < _merged.length-1 ? '1px solid #c8ddef' : 'none'}">
             <div style="flex-shrink:0;width:120px;padding:8px 10px;font-size:15px;color:${isInferred ? '#5a7a9a' : '#1a4a8e'};border-right:1px solid #c8ddef;
                         font-style:${isInferred ? 'italic' : 'normal'}">
               ${esc(entry.date||'')}
-              ${isInferred ? '<div style="font-size:13px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isInferred ? '<div style="font-size:12px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isEvent    ? '<div style="font-size:11px;color:#7a9ab8;margin-top:2px;text-transform:uppercase;letter-spacing:.04em">event</div>' : ''}
             </div>
             <div style="flex:1;padding:8px 12px;min-width:0">
               <div style="font-size:18px;color:#1a2e42;font-weight:600;margin-bottom:3px">${esc(entry.label||'')}</div>
@@ -12998,7 +13023,8 @@ function openSaveModal() {
           </div>`;
         }).join('')}
       </div>
-    </div>` : ''}
+    </div>`;
+    })() : ''}
 
     ${r.publisherSummary?.length ? `
     <div class="pv-section">
@@ -13567,17 +13593,26 @@ function openSaveModalFromRecord(r) {
       </div>`;
     })() : ''}
 
-    ${r.timeline?.length ? `
-    <div class="pv-section">
-      <div class="pv-section-title">📅 Chronological Timeline</div>
+    ${(r.timeline?.length || r.events?.length) ? (() => {
+      const _evAsTimeline = (r.events||[]).map(ev => ({
+        date: ev.date||'', label: ev.name||'',
+        snippet: [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+        certainty: 'event', source: '', _isEvent: true
+      }));
+      const _merged = [...(r.timeline||[]).map(e=>({...e})), ..._evAsTimeline]
+        .sort((a,b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+      return `<div class="pv-section">
+      <div class="pv-section-title">🕐 Dates & Time References</div>
       <div style="background:#eef5fb;border:1px solid #b0cce0;border-radius:2px;overflow:hidden">
-        ${r.timeline.map((entry, i) => {
+        ${_merged.map((entry, i) => {
           const isInferred = (entry.certainty||'').toLowerCase() === 'inferred';
-          return `<div style="display:flex;gap:0;{i < r.timeline.length-1 ? '1px solid #c8ddef' : 'none'}">
+          const isEvent    = !!entry._isEvent;
+          return `<div style="display:flex;gap:0;border-bottom:${i < _merged.length-1 ? '1px solid #c8ddef' : 'none'}">
             <div style="flex-shrink:0;width:120px;padding:8px 10px;font-size:15px;color:${isInferred ? '#5a7a9a' : '#1a4a8e'};border-right:1px solid #c8ddef;
                         font-style:${isInferred ? 'italic' : 'normal'}">
               ${esc(entry.date||'')}
-              ${isInferred ? '<div style="font-size:13px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isInferred ? '<div style="font-size:12px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isEvent    ? '<div style="font-size:11px;color:#7a9ab8;margin-top:2px;text-transform:uppercase;letter-spacing:.04em">event</div>' : ''}
             </div>
             <div style="flex:1;padding:8px 12px;min-width:0">
               <div style="font-size:18px;color:#1a2e42;font-weight:600;margin-bottom:3px">${esc(entry.label||'')}</div>
@@ -13586,7 +13621,8 @@ function openSaveModalFromRecord(r) {
           </div>`;
         }).join('')}
       </div>
-    </div>` : ''}
+    </div>`;
+    })() : ''}
 
     ${r.publisherSummary?.length ? `
     <div class="pv-section">
@@ -15051,6 +15087,24 @@ ${r.structuredAnalysis ? `
     });
     if (cur) sections.push(cur);
 
+    // Merge Events section into Dates & Time References, sorted chronologically
+    (function() {
+      var evIdx    = -1, datesIdx = -1;
+      sections.forEach(function(s, i) {
+        if (/📅.*events|^events$/i.test((s.head||'').replace(/<[^>]+>/g,''))) evIdx    = i;
+        if (/🕐|dates.*time|time.*references/i.test((s.head||'').replace(/<[^>]+>/g,'')))  datesIdx = i;
+      });
+      if (evIdx < 0 || datesIdx < 0) return;
+      var evBullets = sections[evIdx].lines.filter(function(l){ return /^[-*•] /.test(l); });
+      var datesSec  = sections[datesIdx];
+      var datesBullets = datesSec.lines.filter(function(l){ return /^[-*•] /.test(l); });
+      var nonBullets   = datesSec.lines.filter(function(l){ return !/^[-*•] /.test(l); });
+      var merged = evBullets.concat(datesBullets);
+      merged.sort(function(a, b) { return _dateToSortKey(a) - _dateToSortKey(b); });
+      datesSec.lines = nonBullets.concat(merged);
+      sections.splice(evIdx, 1);
+    })();
+
     // Render each section as a card body
     function renderLines(lns) {
       var out = '', i = 0;
@@ -15103,25 +15157,7 @@ ${r.structuredAnalysis ? `
         if (isDates) {
           var timelineItems = s.lines.filter(function(l){ return /^[-*\u2022] /.test(l); });
           if (timelineItems.length) {
-            // Sort ascending chronologically by extracting year/date from each item
-            function extractSortKey(line) {
-              var text = line.replace(/^[-*\u2022] /,'');
-              // Try YYYY-MM-DD or YYYY/MM/DD
-              var m = text.match(/\b(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\b/);
-              if (m) return parseInt(m[1])*10000 + parseInt(m[2])*100 + parseInt(m[3]);
-              // Try "Month DD, YYYY" or "Month YYYY"
-              var months = {january:1,february:2,march:3,april:4,may:5,june:6,
-                            july:7,august:8,september:9,october:10,november:11,december:12};
-              var m2 = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i);
-              if (m2) return parseInt(m2[3])*10000 + (months[m2[1].toLowerCase()]||0)*100 + parseInt(m2[2]);
-              var m3 = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})\b/i);
-              if (m3) return parseInt(m3[2])*10000 + (months[m3[1].toLowerCase()]||0)*100;
-              // Try bare YYYY
-              var m4 = text.match(/\b(\d{4})\b/);
-              if (m4) return parseInt(m4[1])*10000;
-              return 0;
-            }
-            timelineItems.sort(function(a, b){ return extractSortKey(a) - extractSortKey(b); });
+            timelineItems.sort(function(a, b){ return _dateToSortKey(a) - _dateToSortKey(b); });
             bodyHtml = '<div style="position:relative;padding-left:18pt">'
               + '<div style="position:absolute;left:6pt;top:4pt;bottom:4pt;width:2pt;background:#c8d8e8;border-radius:1pt"></div>'
               + timelineItems.map(function(l) {
@@ -15601,9 +15637,16 @@ ${r.alternativeNames?.length ? `
   </div>
 </div>` : ''}
 
-${r.timeline?.length ? `
-<div class="card full-width" style="margin-top:14pt">
-  <div class="card-title">📅 Chronological Timeline</div>
+${(r.timeline?.length || r.events?.length) ? (() => {
+  const _evRows = (r.events||[]).map(ev => ({
+    date: ev.date||'', label: ev.name||'',
+    snippet: [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+    certainty: 'event', source: '', _isEvent: true
+  }));
+  const _merged = [...(r.timeline||[]).map(entry=>({...entry})), ..._evRows]
+    .sort((a,b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+  return `<div class="card full-width" style="margin-top:14pt">
+  <div class="card-title">🕐 Dates & Time References</div>
   <table class="timeline-table" style="width:100%;border-collapse:collapse;font-size:8.4pt;table-layout:fixed">
     <colgroup>
       <col style="width:80pt">
@@ -15616,16 +15659,18 @@ ${r.timeline?.length ? `
       <tr style="background:#f0f4f9;">
         <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600;white-space:nowrap">Date</th>
         <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Label</th>
-        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Snippet</th>
-        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600;white-space:nowrap">Certainty</th>
+        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Details</th>
+        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600;white-space:nowrap">Type</th>
         <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Source</th>
       </tr>
     </thead>
     <tbody>
-      ${r.timeline.map((entry, i) => {
-        const isInf = (entry.certainty||'').toLowerCase() === 'inferred';
+      ${_merged.map((entry, i) => {
+        const isInf   = (entry.certainty||'').toLowerCase() === 'inferred';
+        const isEvent = !!entry._isEvent;
         const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
-
+        const typeLabel = isEvent ? 'Event' : isInf ? 'Inferred' : e(entry.certainty||'');
+        const typeColor = isEvent ? '#6a4a9e' : isInf ? '#c84444' : '#2a8a55';
         return `<tr style="background:${bg}">
           <td style="padding:5pt 8pt;vertical-align:top;font-size:10pt;
                color:${isInf?'#7a9ab8':'#1a4a8e'};font-style:${isInf?'italic':'normal'};white-space:nowrap">${e(entry.date||'')}</td>
@@ -15633,15 +15678,16 @@ ${r.timeline?.length ? `
                overflow:hidden;text-overflow:ellipsis">${e(entry.label||'')}</td>
           <td style="padding:5pt 8pt;vertical-align:top;font-size:10pt;color:#3a5878;line-height:1.5;
                word-break:break-word">${e(entry.snippet||'')}</td>
-          <td style="padding:5pt 8pt;vertical-align:top;font-size:7.8pt;
-               color:${isInf?'#c84444':'#2a8a55'};overflow:hidden;text-overflow:ellipsis">${e(entry.certainty||'')}</td>
+          <td style="padding:5pt 8pt;vertical-align:top;font-size:7.8pt;color:${typeColor};
+               overflow:hidden;text-overflow:ellipsis">${typeLabel}</td>
           <td style="padding:5pt 8pt;vertical-align:top;font-size:10pt;color:#666;font-style:italic;
                word-break:break-word">${e(entry.source||'')}</td>
         </tr>`;
       }).join('')}
     </tbody>
   </table>
-</div>` : ''}
+</div>`;
+})() : ''}
 
 ${r.publisherSummary?.length ? `
 <div class="card full-width" style="margin-top:14pt">
