@@ -5956,7 +5956,11 @@ function itemEditSave() {
   if (prevBtn) prevBtn.disabled = false;
   if (nextBtn) nextBtn.disabled = false;
   renderExtractedImages(); // update ● indicator in list
-  setStatus('ok', 'Item saved');
+  const _staleResolved = checkAndResolveStaleConflicts();
+  if (_staleResolved > 0) renderConflictsSubpane();
+  setStatus('ok', _staleResolved > 0
+    ? `Item saved · ${_staleResolved} conflict${_staleResolved !== 1 ? 's' : ''} auto-resolved (source edited)`
+    : 'Item saved');
   updateDirtyIndicator();
   // Update title to reflect saved caption
   if (i >= 0 && S.extractedImages[i]) {
@@ -10699,6 +10703,42 @@ function switchAnalysisSubTab(tab) {
 }
 
 // Global helper: linkify "Item N" references in conflict statements → opens edit modal
+function isConflictStale(c) {
+  if (c._resolved) return false;
+  return [c.item1, c.item2].some(stmt => {
+    const m = String(stmt || '').match(/\bItem\s+(?:number\s+)?(\d+)/i);
+    if (!m) return false;
+    const itemNum = parseInt(m[1], 10);
+    const img = S.extractedImages.find(img => (img.seqNum || 0) === itemNum)
+             || S.extractedImages[itemNum - 1];
+    if (!img) return false;
+    const currentText = ((img.caption||'') + ' ' + (img.extractedText||'') + ' ' + (img.citSource||'')).toLowerCase();
+    if (!currentText.trim()) return false;
+    const phraseMatch = stmt.match(/\bItem\s+(?:number\s+)?\d+\s*[—\-–:]\s*(.*)/i);
+    if (!phraseMatch) return false;
+    const keyPhrase = phraseMatch[1].trim().toLowerCase();
+    if (keyPhrase.length < 4) return false;
+    const words = keyPhrase.split(/\W+/).filter(w => w.length > 3);
+    if (words.length === 0) return false;
+    const matchCount = words.filter(w => currentText.includes(w)).length;
+    return matchCount / words.length < 0.5;
+  });
+}
+
+function checkAndResolveStaleConflicts() {
+  let count = 0;
+  (S._conflicts || []).forEach(c => {
+    if (!c._resolved && isConflictStale(c)) {
+      c._resolved   = true;
+      c._stale      = true;
+      c._resolution = 'Auto-resolved: source text was edited and no longer contains the original conflicting statements';
+      count++;
+    }
+  });
+  if (count > 0) { markDirty(); refreshSourceTabButtons(); }
+  return count;
+}
+
 function linkifyConflictStmt(text) {
   const escStr = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   // Match formats the AI actually generates:
@@ -10716,6 +10756,7 @@ function linkifyConflictStmt(text) {
 }
 
 function renderConflictsSubpane() {
+  checkAndResolveStaleConflicts();
   const cd = document.getElementById('conflictsDisplay');
   const statusEl = document.getElementById('conflictsStatus');
   if (!cd) return;
@@ -10774,14 +10815,27 @@ function renderConflictsSubpane() {
       const col = sevColor[sev] || sevColor.medium;
       const borderCol = c._resolved ? '#2e7d32' : col;
       const cardOpacity = '';
-      const sevSt = c._resolved ? 'text-decoration:line-through;color:#2e7d32;border-color:#2e7d32;background:rgba(170,255,68,.1);' : `color:${col};border:1px solid ${col};background:${col}18;`;
-      const titCol = c._resolved ? '#2e7d32' : 'var(--aml)';
-      const resolvedBadge = c._resolved ? ` <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px">✔ Resolved</span>` : '';
+      const sevSt = c._resolved
+        ? (c._stale
+            ? 'text-decoration:line-through;color:#e05555;border-color:#e05555;background:rgba(224,85,85,.1);'
+            : 'text-decoration:line-through;color:#2e7d32;border-color:#2e7d32;background:rgba(170,255,68,.1);')
+        : `color:${col};border:1px solid ${col};background:${col}18;`;
+      const titCol = c._resolved ? (c._stale ? '#c84444' : '#2e7d32') : 'var(--aml)';
+      const resolvedBadge = c._resolved
+        ? (c._stale
+            ? ` <span style="color:#e05555;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(224,85,85,.12);border:1px solid rgba(224,85,85,.4);border-radius:3px;padding:1px 6px">✕ Source edited</span>`
+            : ` <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px">✔ Resolved</span>`)
+        : '';
+      const sevBadgeHtml = c._stale
+        ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center">
+            <span style="font-size:13px;font-weight:700;letter-spacing:.08em;padding:1px 6px;border-radius:2px;border:1px solid;${sevSt}">${sev.toUpperCase()}</span>
+            <span style="position:absolute;color:#e05555;font-size:20px;font-weight:900;pointer-events:none;line-height:1;opacity:.85">✕</span>
+           </span>`
+        : `<span style="font-size:13px;font-weight:700;letter-spacing:.08em;padding:1px 6px;border-radius:2px;border:1px solid;${sevSt}">${sev.toUpperCase()}</span>`;
       return `<div id="conflict-card-${i}" style="background:var(--s3);border:1px solid var(--bd);
                    border-left:3px solid ${borderCol};border-radius:3px;padding:11px 13px;margin-bottom:8px;${cardOpacity}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:13px;font-weight:700;
-                letter-spacing:.08em;padding:1px 6px;border-radius:2px;border:1px solid;${sevSt}">${sev.toUpperCase()}</span>
+          ${sevBadgeHtml}
           <span id="conflict-title-${i}" style="font-family:'Playfair Display',serif;font-size:20px;color:${titCol};flex:1"
                 ${c._resolved ? 'data-resolved="1"' : ''}>${i+1}. ${esc(c.subject)}${resolvedBadge}</span>
           <button onclick="deleteConflict(${i})" title="Remove this conflict"
