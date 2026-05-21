@@ -9860,6 +9860,11 @@ If no conflicts are found, return an empty gpsConflicts array.`;
           autoResolvedCount++;
           return { ...old, _resolved: true, _resolution: 'Auto-resolved: AI determined conflict no longer present in source text' };
         }
+        // AI was asked to re-evaluate this conflict but returned no conflicts at all — treat as resolved
+        if (conflicts.length === 0) {
+          autoResolvedCount++;
+          return { ...old, _resolved: true, _resolution: 'Auto-resolved: No conflicts found on re-scan' };
+        }
         return old;
       });
 
