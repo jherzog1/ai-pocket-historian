@@ -10705,29 +10705,43 @@ function switchAnalysisSubTab(tab) {
 // Global helper: linkify "Item N" references in conflict statements → opens edit modal
 function isConflictStale(c) {
   if (c._resolved) return false;
-  return [c.item1, c.item2].some(stmt => {
+
+  const extractPhrase = stmt => {
+    const pm = String(stmt || '').match(/\bItem\s+(?:number\s+)?\d+\s*[—\-–:]\s*(.*)/i);
+    return pm ? pm[1].trim().toLowerCase() : '';
+  };
+  const sigWords = phrase => new Set(phrase.split(/\W+/).filter(w => w.length > 3));
+
+  const phrase1 = extractPhrase(c.item1);
+  const phrase2 = extractPhrase(c.item2);
+  const words1  = sigWords(phrase1);
+  const words2  = sigWords(phrase2);
+
+  return [
+    { stmt: c.item1, phrase: phrase1, own: words1, other: words2 },
+    { stmt: c.item2, phrase: phrase2, own: words2, other: words1 }
+  ].some(({ stmt, phrase, own, other }) => {
     const m = String(stmt || '').match(/\bItem\s+(?:number\s+)?(\d+)/i);
     if (!m) return false;
     const itemNum = parseInt(m[1], 10);
     const img = S.extractedImages.find(img => (img.seqNum || 0) === itemNum)
              || S.extractedImages[itemNum - 1];
     if (!img) return false;
-    const currentText = ((img.caption||'') + ' ' + (img.extractedText||'') + ' ' + (img.citSource||'')).toLowerCase();
-    if (!currentText.trim()) return false;
-    const phraseMatch = stmt.match(/\bItem\s+(?:number\s+)?\d+\s*[—\-–:]\s*(.*)/i);
-    if (!phraseMatch) return false;
-    const keyPhrase = phraseMatch[1].trim().toLowerCase();
-    if (keyPhrase.length < 4) return false;
-    // Numbers are the most specific conflict tokens — if any are missing the value changed
-    const numbers = keyPhrase.match(/\b\d+\b/g) || [];
-    if (numbers.length > 0) {
-      if (numbers.some(n => !new RegExp('\\b' + n + '\\b').test(currentText))) return true;
-    }
-    // Fall back to word-overlap for non-numeric conflicts
-    const words = keyPhrase.split(/\W+/).filter(w => w.length > 3);
-    if (words.length === 0) return false;
-    const matchCount = words.filter(w => currentText.includes(w)).length;
-    return matchCount / words.length < 0.5;
+    const cur = ((img.caption||'') + ' ' + (img.extractedText||'') + ' ' + (img.citSource||'')).toLowerCase();
+    if (!cur.trim() || !phrase) return false;
+
+    // Digit numbers are unambiguous — any missing means a specific value changed
+    const nums = phrase.match(/\b\d+\b/g) || [];
+    if (nums.length > 0 && nums.some(n => !new RegExp('\\b' + n + '\\b').test(cur))) return true;
+
+    // Words unique to this side of the conflict are the actual conflicting tokens.
+    // If any distinguishing word is gone the specific claim was edited out.
+    const distinguishing = [...own].filter(w => !other.has(w));
+    if (distinguishing.length > 0 && distinguishing.some(w => !cur.includes(w))) return true;
+
+    // Fallback: large overall word-overlap drop
+    if (own.size === 0) return false;
+    return [...own].filter(w => cur.includes(w)).length / own.size < 0.5;
   });
 }
 
