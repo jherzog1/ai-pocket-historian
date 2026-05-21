@@ -10718,6 +10718,12 @@ function isConflictStale(c) {
     if (!phraseMatch) return false;
     const keyPhrase = phraseMatch[1].trim().toLowerCase();
     if (keyPhrase.length < 4) return false;
+    // Numbers are the most specific conflict tokens — if any are missing the value changed
+    const numbers = keyPhrase.match(/\b\d+\b/g) || [];
+    if (numbers.length > 0) {
+      if (numbers.some(n => !new RegExp('\\b' + n + '\\b').test(currentText))) return true;
+    }
+    // Fall back to word-overlap for non-numeric conflicts
     const words = keyPhrase.split(/\W+/).filter(w => w.length > 3);
     if (words.length === 0) return false;
     const matchCount = words.filter(w => currentText.includes(w)).length;
