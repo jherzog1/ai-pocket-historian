@@ -7507,15 +7507,7 @@ function selectApiProvider(id) {
 function updateCombinedBtn() {
   const btn = document.getElementById('btnCombinedAnalysis');
   if (!btn) return;
-  const savedIds  = new Set(S.records.map(r => r.id));
-  const hasActive = S.lastSavedId && !savedIds.has(S.lastSavedId) && S.extractedImages.length > 0;
-  const count     = S.records.length + (hasActive ? 1 : 0);
-  const onChat    = document.getElementById('queryTabBtn')?.classList.contains('on');
-  btn.style.display = (count >= 2 && onChat) ? '' : 'none';
-  btn.disabled      = count < 2;
-  btn.title         = count >= 2
-    ? `Run combined analysis across all ${count} open records`
-    : 'Open 2 or more records to enable combined analysis';
+  btn.style.display = 'none';
 }
 
 async function doCombinedAnalysis() {
