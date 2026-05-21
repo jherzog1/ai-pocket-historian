@@ -9371,7 +9371,10 @@ Rules:
         if (tcFence) tcRaw = tcFence[1].trim();
         tcRaw = tcRaw.replace(/^[^{]*/,'').trim();
         const tcParsed = JSON.parse(tcRaw);
-        if (tcParsed?.clusters?.length >= 2) S.tagClusters = tcParsed.clusters;
+        if (tcParsed?.clusters?.length >= 2) {
+          S.tagClusters = tcParsed.clusters;
+          renderTags();
+        }
       }
     } catch(e) { S.tagClusters = null; }
 
@@ -12448,8 +12451,14 @@ function addTag() {
 function removeTag(t){S.tags=S.tags.filter(x=>x!==t);markDirty();renderTags();}
 function renderTags() {
   const el = document.getElementById('tagRow');
-  if (el) el.innerHTML = S.tags.map(t =>
-    `<span class="tag" onclick="removeTag('${esc(t)}')">${esc(t)} ×</span>`).join('');
+  if (el) el.innerHTML = S.tags.map(t => {
+    let clStyle = '';
+    if (S.tagClusters?.length) {
+      const cl = S.tagClusters.find(c => (c.tags||[]).some(ct => ct.toLowerCase() === t.toLowerCase()));
+      if (cl?.color) clStyle = ` style="background:${cl.color}18;color:${cl.color};border:1px solid ${cl.color}40"`;
+    }
+    return `<span class="tag"${clStyle} onclick="removeTag('${esc(t)}')">${esc(t)} ×</span>`;
+  }).join('');
   refreshActionButtons();
 }
 
@@ -13076,7 +13085,6 @@ function continueEditing() {
   S._corrections  = a.corrections  || '';
 
   S.tags = Array.isArray(a.tags) ? [...a.tags] : [];
-  renderTags();
 
   S.citations = (Array.isArray(a.citations) ? a.citations : []).map(text => ({
     id: ++S.citSeq, text
@@ -13088,6 +13096,7 @@ function continueEditing() {
   S.structuredAnalysis  = record.structuredAnalysis  || '';
   S.tagClusters         = record.tagClusters         || null;
   S.tagDiagram          = record.tagDiagram          || '';
+  renderTags(); // after tagClusters so colors are applied
   S.timeline          = Array.isArray(record.timeline) ? record.timeline : [];
   S.publisherSummary  = Array.isArray(record.publisherSummary) ? record.publisherSummary : [];
   S.profiles          = Array.isArray(record.profiles) ? record.profiles : [];
