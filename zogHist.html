@@ -324,29 +324,30 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
   padding:10px 14px;
   line-height:1.85;
   color:var(--txd);
-  columns:2;
+  columns: 2 280px;  /* only creates 2 cols if container is at least 560px */
   column-gap:16px;
   column-rule:1px solid var(--bd);
   text-align:justify;
   hyphens:auto;
 }
-@media (max-width:520px) {
-  .qmsg-ai .q-brick-body { text-align:left; hyphens:none; }
+@media (max-width:600px) {
+  .qmsg-ai .q-brick-body { columns:1; text-align:left; hyphens:none; }
 }
 .qmsg-ai .q-brick-body p { margin:0 0 7px; break-inside:avoid; }
 .qmsg-ai .q-brick-body p:last-child { margin-bottom:0; }
-.qmsg-ai .q-brick-body ul,.qmsg-ai .q-brick-body ol { margin:4px 0 8px 18px;padding:0;break-inside:avoid; }
+.qmsg-ai .q-brick-body ul,.qmsg-ai .q-brick-body ol { margin:4px 0 8px 0 !important;padding-left:22px !important;list-style-position:outside !important;break-inside:avoid; }
 .qmsg-ai .q-brick-body li { margin-bottom:4px; }
+.qmsg-ai .q-brick-body li ul,.qmsg-ai .q-brick-body li ol { margin:3px 0 !important;padding-left:22px !important; }
 .qmsg-ai .q-brick-body strong { color:var(--tx);font-weight:600; }
 .qmsg-ai .q-brick-body em { color:var(--aml);font-style:italic; }
 /* Global list indentation — covers q-plain and bare bubble content */
-.qmsg-ai ul, .qmsg-ai ol { margin:4px 0 8px 20px; padding:0; }
-.qmsg-ai li { margin-bottom:4px; line-height:1.65; padding-left:4px; }
-.qmsg-ai li > ul, .qmsg-ai li > ol { margin-top:4px; margin-bottom:4px; margin-left:18px; }
+.qmsg-ai ul, .qmsg-ai ol { margin:4px 0 8px 0 !important; padding-left:22px !important; list-style-position:outside !important; }
+.qmsg-ai li { margin-bottom:4px; line-height:1.65; }
+.qmsg-ai li ul, .qmsg-ai li ol { margin:3px 0 !important; padding-left:22px !important; }
 /* Session card answer lists */
-.chat-session-a ul, .chat-session-a ol { margin:4px 0 6px 18px; padding:0; }
-.chat-session-a li { margin-bottom:3px; line-height:1.6; padding-left:4px; }
-.chat-session-a li > ul, .chat-session-a li > ol { margin-top:3px; margin-bottom:3px; margin-left:16px; }
+.chat-session-a ul, .chat-session-a ol { margin:4px 0 6px 0 !important; padding-left:22px !important; list-style-position:outside !important; }
+.chat-session-a li { margin-bottom:3px; line-height:1.6; }
+.chat-session-a li ul, .chat-session-a li ol { margin:3px 0 !important; padding-left:22px !important; }
 
 /* ── Chat Sessions Masonry ──────────────────────────────────── */
 .chat-sessions-masonry {
@@ -570,7 +571,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
   border-left:12px solid lightblue;border-right:12px solid lightblue;
   border-top:8px solid lightblue;border-radius:9px;background:var(--s3);overflow:hidden;margin-bottom:12px}
 .ext-img-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;width:100%}
-.ext-img-thumb{flex-shrink:0;width:80px;height:64px;object-fit:cover;object-position:top;
+.ext-img-thumb{flex-shrink:0;width:160px;height:128px;object-fit:cover;object-position:top;
   border:1px solid var(--bd);border-radius:1px;background:#080d14}
 .ext-img-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
 .ext-img-meta{font-size:23px;color:var(--txd)}
@@ -633,6 +634,15 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
 .sumbox{background:var(--s2);border:1px solid var(--bd);border-radius:2px;
   padding:9px;margin-bottom:14px;color:var(--txd);line-height:1.9}
 .mrow{display:flex;gap:7px;justify-content:flex-end}
+
+/* ── Research Significance Panel ──────────────────────────── */
+#iemSigPanel                    { border-radius:6px !important; border:1px solid var(--bd2) !important; background:var(--s3) !important; padding:10px 12px !important; position:relative !important; overflow:hidden !important; margin-top:6px !important; box-sizing:border-box !important; }
+#iemSigPanel .sig-glow           { position:absolute !important; top:0 !important; left:0 !important; right:0 !important; height:2px !important; background:linear-gradient(90deg,var(--am),var(--bl),var(--am)) !important; border-radius:6px 6px 0 0 !important; }
+#iemSigPanel .sig-header         { display:flex !important; align-items:center !important; gap:7px !important; margin-bottom:7px !important; margin-top:2px !important; }
+#iemSigPanel .sig-icon           { font-size:20px !important; color:var(--am) !important; line-height:1 !important; font-style:normal !important; font-weight:normal !important; }
+#iemSigPanel .sig-label          { font-size:13px !important; color:var(--am) !important; text-transform:uppercase !important; letter-spacing:.1em !important; font-weight:700 !important; font-style:normal !important; }
+#iemSigPanel .sig-badge          { font-size:12px !important; color:var(--aml) !important; margin-left:auto !important; background:var(--amd) !important; border:1px solid var(--bd2) !important; border-radius:3px !important; padding:1px 6px !important; font-style:normal !important; font-weight:normal !important; }
+#iemSigText                      { font-size:17px !important; color:var(--tx) !important; line-height:1.7 !important; padding:7px 10px !important; border-radius:4px !important; background:var(--s2) !important; border-left:3px solid var(--am) !important; font-style:normal !important; }
 
 ::-webkit-scrollbar{width:8px;height:8px}
 #iemImgScroll::-webkit-scrollbar { width:10px; }
@@ -2438,9 +2448,9 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
     <div id="itemEditBody" style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">
 
       <!-- LEFT col: image panel -->
-      <div id="iemLeftCol" style="display:flex;flex-direction:column;flex-shrink:0;overflow:hidden">
+      <div id="iemLeftCol" style="display:flex;flex-direction:column;flex-shrink:0;overflow:auto">
         <div id="itemEditImgPanel"
-             style="width:100%;flex:1;background:#080d14;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden">
+             style="width:100%;flex:1;background:#080d14;box-sizing:border-box;display:flex;flex-direction:column">
           <!-- Zoom bar hidden — image displays at natural size, scroll to pan -->
           <div id="iemZoomBar" style="display:none"></div>
           <!-- Scrollable image area — native scroll only, no drag/zoom -->
@@ -2508,6 +2518,24 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
                       style="resize:vertical;overflow-y:auto;padding:6px 8px;line-height:1.65;
                              width:100%;box-sizing:border-box;transition:height .2s ease"
                       placeholder="Extracted text…" oninput="itemEditChange()"></textarea>
+          </div>
+
+          <!-- Research Significance — AI generated, read-only -->
+          <div id="iemSigPanel" style="display:none">
+            <div class="sig-glow"></div>
+            <div class="sig-header">
+              <span class="sig-icon">✦</span>
+              <span class="sig-label">Research Significance</span>
+              <span class="sig-badge">AI generated</span>
+            </div>
+            <textarea id="iemSigText" rows="3"
+                      style="width:100%;box-sizing:border-box;resize:vertical;
+                             font-size:13px !important;line-height:1.7 !important;
+                             padding:7px 10px !important;border-radius:4px !important;
+                             background:var(--s2) !important;border:none !important;
+                             border-left:3px solid var(--am) !important;
+                             color:var(--tx) !important;font-family:inherit;outline:none"
+                      oninput="itemEditChange()"></textarea>
           </div>
         </div>
       </div>
@@ -5599,6 +5627,14 @@ function openItemEditModal(i, opts = {}) {
   document.getElementById('iemPage').value     = img.citPage      || '';
   document.getElementById('iemText').value     = img.extractedText|| '';
 
+  // Research significance panel
+  const sigPanel = document.getElementById('iemSigPanel');
+  const sigText  = document.getElementById('iemSigText');
+  if (sigPanel && sigText) {
+    sigText.value          = img.significance || '';
+    sigPanel.style.display = '';  // always show so user can add/edit
+  }
+
   // iemSkipOcr removed — OCR is now triggered via Run OCR button only
 
   const imgPanel   = document.getElementById('itemEditImgPanel');
@@ -5758,20 +5794,20 @@ function iemApplyLayout() {
   if (!modal || !body || !lCol || !rCol) return;
   const w = modal.offsetWidth;
   if (w >= IEM_WIDE_BREAKPOINT) {
-    // Wide: side-by-side 50/50, each column scrolls independently
+    // Wide: side-by-side 50/50
     body.style.flexDirection  = 'row';
-    body.style.overflowY      = 'hidden';
+    body.style.overflowY      = 'auto';  // body scrolls, not hidden
+    body.style.alignItems     = 'flex-start'; // columns grow to content height
     lCol.style.width          = '50%';
     lCol.style.flexShrink     = '0';
-    lCol.style.height         = '100%';
-    lCol.style.overflowY      = 'auto';
+    lCol.style.height         = 'auto';  // grow with image, don't lock to 100%
+    lCol.style.overflowY      = 'visible';
     lCol.style.borderRight    = '1px solid var(--bd)';
     rCol.style.width          = '50%';
     rCol.style.flexShrink     = '0';
-    rCol.style.overflowY      = 'auto';
+    rCol.style.overflowY      = 'visible';
     rCol.style.flex           = '';
-    // Image fills left column
-    if (imgScr) { imgScr.style.height = ''; imgScr.style.minHeight = ''; }
+    if (imgScr) { imgScr.style.height = 'auto'; imgScr.style.minHeight = '40dvh'; imgScr.style.maxHeight = ''; }
   } else {
     // Narrow: single scrollable column — body scrolls, columns flow naturally
     body.style.flexDirection  = 'column';
@@ -5946,6 +5982,8 @@ function closeItemEditModal() {
     if (datEl) img.citDate       = datEl.value;
     if (pagEl) img.citPage       = pagEl.value;
     if (txtEl) img.extractedText = txtEl.value;
+    const sigEl = document.getElementById('iemSigText');
+    if (sigEl) img.significance  = sigEl.value;
   }
 
   const savedIdx = i; // capture before reset
@@ -6411,6 +6449,11 @@ async function querySubmit() {
         throw new Error(err.error?.message || `HTTP ${res.status}`);
       }
 
+      // Create streaming bubble with correct class so CSS applies
+      const histInner2 = document.getElementById('queryHistoryInner') || document.getElementById('queryHistory');
+      const aiBubbleRaw = document.createElement('div');
+      aiBubbleRaw.className = 'qmsg-ai';
+      if (histInner2) histInner2.appendChild(aiBubbleRaw);
 
       const reader  = res.body.getReader();
       const decoder = new TextDecoder();
@@ -6499,7 +6542,11 @@ async function querySubmit() {
                                  generationConfig: { maxOutputTokens: 1024 } }) }
       );
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `HTTP ${res.status}`); }
-      { const reader = res.body.getReader(); const decoder = new TextDecoder(); let buf = '';
+      { const histInner3 = document.getElementById('queryHistoryInner') || document.getElementById('queryHistory');
+        const aiBubbleRawGem = document.createElement('div');
+        aiBubbleRawGem.className = 'qmsg-ai';
+        if (histInner3) histInner3.appendChild(aiBubbleRawGem);
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buf = '';
         while (true) {
           const { done, value } = await reader.read(); if (done) break;
           buf += decoder.decode(value, { stream: true });
@@ -6734,25 +6781,60 @@ function queryMarkdownToHtml(text) {
         continue;
       }
 
-      // Unordered list
-      if (/^[-*•] /.test(line)) {
-        let items = '';
-        while (i < bodyLines.length && /^[-*•] /.test(bodyLines[i])) {
-          items += '<li>' + renderInline(bodyLines[i].replace(/^[-*•] /, '')) + '</li>';
+      // List (ordered or unordered, with nesting via indentation)
+      if (/^(\s*)[-*•] /.test(line) || /^(\s*)\d+\. /.test(line)) {
+        // Collect all consecutive list lines (including indented sub-items)
+        const listLines = [];
+        while (i < bodyLines.length &&
+               (/^(\s*)[-*•] /.test(bodyLines[i]) || /^(\s*)\d+\. /.test(bodyLines[i]))) {
+          listLines.push(bodyLines[i]);
           i++;
         }
-        html += '<ul>' + items + '</ul>';
-        continue;
-      }
 
-      // Ordered list
-      if (/^\d+\. /.test(line)) {
-        let items = '';
-        while (i < bodyLines.length && /^\d+\. /.test(bodyLines[i])) {
-          items += '<li>' + renderInline(bodyLines[i].replace(/^\d+\. /, '')) + '</li>';
-          i++;
-        }
-        html += '<ol>' + items + '</ol>';
+        // Stack-based nested list builder
+        const getIndent  = l => (l.match(/^(\s*)/)?.[1].length || 0);
+        const getTag     = l => /^(\s*)\d+\. /.test(l) ? 'ol' : 'ul';
+        const getContent = l => renderInline(l.replace(/^(\s*)([-*•]|\d+\.)\s+/, ''));
+
+        let listHtml = '';
+        const stack  = []; // {tag, indent, html}
+
+        const closeTop = () => {
+          const top = stack.pop();
+          const closed = `<${top.tag} >${top.html}</${top.tag}>`;
+          if (stack.length) {
+            // Append closed sub-list inside last <li> of parent
+            stack[stack.length-1].html = stack[stack.length-1].html
+              .replace(/<\/li>$/, closed + '</li>');
+          } else {
+            listHtml += closed;
+          }
+        };
+
+        listLines.forEach(ln => {
+          const indent  = getIndent(ln);
+          const tag     = getTag(ln);
+          const content = getContent(ln);
+
+          // Pop deeper levels
+          while (stack.length && stack[stack.length-1].indent > indent) closeTop();
+
+          if (!stack.length || stack[stack.length-1].indent < indent) {
+            // Push new nesting level
+            stack.push({ tag, indent, html: `<li>${content}</li>` });
+          } else {
+            const top = stack[stack.length-1];
+            if (top.tag === tag) {
+              top.html += `<li>${content}</li>`;
+            } else {
+              closeTop();
+              stack.push({ tag, indent, html: `<li>${content}</li>` });
+            }
+          }
+        });
+        while (stack.length) closeTop();
+
+        html += listHtml;
         continue;
       }
 
@@ -6787,7 +6869,7 @@ function queryMarkdownToHtml(text) {
   let brickHtml = '';
   let plainHtml = '';
   const headSizes   = { 1: '1.15em', 2: '1em', 3: '.9em' };
-  const headIndent  = { 1: '0',      2: '1.2em', 3: '2.4em' };
+  const headIndent  = { 1: '0',      2: '2.4em', 3: '4.8em' };
 
   sections.forEach(sec => {
     const body = renderBody(sec.body);
@@ -6796,7 +6878,7 @@ function queryMarkdownToHtml(text) {
       const sz     = headSizes[sec.headLevel]  || '1em';
       const indent = headIndent[sec.headLevel] || '0';
       const head   = `<${tag} class="q-brick-head"
-                       style="font-size:${sz};margin:0;padding-left:${indent}">`
+                       style="font-size:${sz};margin:0">`
                    + renderInline(sec.head)
                    + `</${tag}>`;
       brickHtml += '<div class="q-brick" style="margin-left:' + indent + '">'
@@ -8045,7 +8127,7 @@ function renderExtractedImages() {
                   background:var(--s1);border:none;cursor:pointer;width:100%;text-align:left;min-height:44px;
                   -webkit-tap-highlight-color:rgba(230,200,74,.2)">
         ${hasImg
-          ? `<img src="${img.dataURL}" alt="" style="width:55px;height:55px;object-fit:cover;object-position:top;
+          ? `<img src="${img.dataURL}" alt="" style="width:110px;height:110px;object-fit:cover;object-position:top;
                border-radius:2px;flex-shrink:0;border:1px solid var(--bd)">`
           : `<div style="width:55px;height:55px;background:var(--s2);border:1px solid var(--bd);
                border-radius:2px;flex-shrink:0;display:flex;align-items:center;
@@ -8994,7 +9076,7 @@ const overlay = document.getElementById('jsonldScanOverlay');
       headers: apiHeaders(),
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1200,
+        max_tokens: 8000,
         system: `You are a genealogical name analyst. From the provided text, identify all people and every name variation used to refer to each person.
 
 Return ONLY a JSON array — no markdown, no preamble:
@@ -9023,6 +9105,7 @@ Rules:
         const altRaw = await jsonWithTimeout(altNamesRes);
         if (!altRaw.error) {
           trackUsage('Name Analysis', altRaw);
+          warnIfTruncated('Pass 1 — Name Analysis', altRaw);
           let altStr = (altRaw.content||[]).map(b=>b.text||'').join('').trim();
           const altFence = altStr.match(/```(?:json)?\s*([\s\S]+?)```/);
           if (altFence) altStr = altFence[1].trim();
@@ -9208,7 +9291,7 @@ Highlight patterns and notable insights: frequently mentioned individuals, recur
       })
     });
 
-    const [data, historianRes, structuredAnalysisRes, tagClusterRes, tagDiagramRes] = await Promise.all([
+    const [data, historianRes, structuredAnalysisRes, tagClusterRes] = await Promise.all([
       jsonWithTimeout(res),
       historianPromise.then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
       structuredAnalysisPromise.then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
@@ -9217,7 +9300,7 @@ Highlight patterns and notable insights: frequently mentioned individuals, recur
         method: 'POST', headers: apiHeaders(),
         body: JSON.stringify({
           model: PROVIDERS[Object.keys(PROVIDERS).find(k => PROVIDERS[k] === getProvider()) || 'anthropic']?.models?.fast || 'claude-haiku-4-5-20251001',
-          max_tokens: 600,
+          max_tokens: 2000,
           system: `You are a thematic analyst. Given a list of keywords/tags and an optional thematic analysis, group the tags into exactly 3 dominant theme clusters that best represent the content.
 
 Return ONLY valid JSON, no markdown:
@@ -9244,39 +9327,6 @@ Rules:
 }` }]
         })
       }).then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
-      // Generate SVG systems diagram from keyword narrative
-      fetchWithTimeout(null, {
-        method: 'POST', headers: apiHeaders(),
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
-          system: `You are a data visualization expert. Generate a clean, professional SVG data cluster diagram based on the provided keyword analysis and tag clusters.
-
-Rules:
-- Output ONLY valid SVG markup starting with <svg and ending with </svg>. No markdown, no explanation.
-- Use viewBox="0 0 1000 750" and width="100%". Do NOT set height="auto" — omit the height attribute entirely or use a pixel value like height="750".
-- White background rect filling the viewBox
-- Use the provided tag clusters as your 3 main cluster groups — place each as a colored bubble/ellipse with its cluster name as a label
-- Place the most dominant theme or subject as the central node
-- Each cluster node should contain 3-6 keyword sub-nodes arranged OUTSIDE and around it — sub-nodes are satellite circles orbiting the cluster circle, never placed inside or overlapping the cluster circle
-- Sub-node circles must have a minimum radius of 45px so all text fits without clipping
-- The cluster/major node circle must remain fully clear of sub-nodes so its label is always readable — sub-nodes connect to the cluster edge via a line but are completely external to it
-- Show relationships using:
-  * solid lines for reinforcing/supportive relationships between clusters
-  * dashed lines (stroke-dasharray="6,3") for contrasting or tension relationships
-  * arrowheads (marker-end) to show direction of influence between clusters
-  * CRITICAL: all connecting lines must start and end exactly at the EDGE of each circle, never passing through or inside any circle. Calculate the endpoint of each line as the point on the circumference closest to the other circle: given two circles with centers (x1,y1) radius r1 and (x2,y2) radius r2, the line goes from (x1 + r1 * dx/dist, y1 + r1 * dy/dist) to (x2 - r2 * dx/dist, y2 - r2 * dy/dist) where dx=x2-x1, dy=y2-y1, dist=sqrt(dx*dx+dy*dy)
-- Color each cluster using the color values provided in the tag cluster data
-- Use clean sans-serif font (font-family="Arial, sans-serif")
-- Minimum font-size: 13px for sub-nodes, 15px for cluster labels, 18px for center node
-- Sub-node text MUST fit within its circle — use shorter labels or <tspan> line breaks; never let text overflow the circle boundary
-- Wrap long labels using <tspan> elements with dy spacing
-- Use viewBox="0 0 1000 750" to give enough space for larger sub-nodes with external satellite positioning
-- Do NOT use JavaScript or external resources
-- The diagram must reflect the ACTUAL content of the provided tags and analysis — use the real tag names and cluster names`,
-          messages: [{ role: 'user', content: `Generate a systems diagram SVG for this keyword analysis:\n\n${S.keywordNarrative || ''}\n\nTags: ${(S.tags||[]).join(', ')}\n\nTag clusters: ${JSON.stringify(S.tagClusters||[])}` }]
-        })
-      }).then(r => r.ok ? jsonWithTimeout(r) : null).catch(() => null),
       // Narrative reconstruction
     ]);
 
@@ -9289,6 +9339,7 @@ Rules:
       : '';
     if (historianRes && !historianRes.error && historianText) {
       trackUsage('Historian Analysis', historianRes);
+      warnIfTruncated('Research Recommendations', historianRes);
       S.historianAnalysis = historianText;
     } else {
       S.historianAnalysis = '';
@@ -9300,6 +9351,7 @@ Rules:
       : '';
     if (structuredAnalysisRes && !structuredAnalysisRes.error && structuredText) {
       trackUsage('Structured Analysis', structuredAnalysisRes);
+      warnIfTruncated('Structured Analysis', structuredAnalysisRes);
       S.structuredAnalysis = structuredText;
     } else {
       S.structuredAnalysis = '';
@@ -9309,39 +9361,58 @@ Rules:
     try {
       if (tagClusterRes && !tagClusterRes.error) {
         trackUsage('Tag Clusters', tagClusterRes);
+        warnIfTruncated('Tag Clusters', tagClusterRes);
         let tcRaw = (tagClusterRes.content||[]).map(b=>b.text||'').join('').trim();
         const tcFence = tcRaw.match(/```(?:json)?\s*([\s\S]+?)```/);
         if (tcFence) tcRaw = tcFence[1].trim();
         tcRaw = tcRaw.replace(/^[^{]*/,'').trim();
         const tcParsed = JSON.parse(tcRaw);
-        if (tcParsed?.clusters?.length === 3) S.tagClusters = tcParsed.clusters;
+        if (tcParsed?.clusters?.length >= 2) S.tagClusters = tcParsed.clusters;
       }
     } catch(e) { S.tagClusters = null; }
 
-    // Process tag diagram SVG
+    // Process tag diagram SVG — runs AFTER clusters so S.tagClusters is populated
     try {
-      if (tagDiagramRes && !tagDiagramRes.error) {
-        trackUsage('Tag Diagram', tagDiagramRes);
-        let svgRaw = (tagDiagramRes.content||[]).map(b=>b.text||'').join('').trim();
-        // Strip markdown fences
-        const svgFence = svgRaw.match(/```(?:svg)?\s*([\s\S]+?)```/);
-        if (svgFence) svgRaw = svgFence[1].trim();
-        // Ensure it starts with <svg
-        const svgStart = svgRaw.indexOf('<svg');
-        if (svgStart >= 0) svgRaw = svgRaw.slice(svgStart);
-        if (svgRaw.startsWith('<svg') && svgRaw.includes('</svg>')) {
-          // Fix invalid SVG attributes — 'height="auto"' is not valid SVG, remove it
-          // so the SVG sizes naturally via viewBox + CSS
-          svgRaw = svgRaw
-            .replace(/\sheight\s*=\s*["']auto["']/gi, '')
-            .replace(/\swidth\s*=\s*["']auto["']/gi, '');
-          // Ensure width="100%" so it fills the container
-          if (!/\swidth\s*=/.test(svgRaw)) {
-            svgRaw = svgRaw.replace('<svg', '<svg width="100%"');
-          } else {
-            svgRaw = svgRaw.replace(/\swidth\s*=\s*["'][^"']*["']/, ' width="100%"');
+      if (S.tagClusters?.length >= 2) {
+        const diagRes = await fetchWithTimeout(null, {
+          method: 'POST', headers: apiHeaders(),
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 4600,
+            system: `You are a data visualization expert. Generate a clean, professional SVG data cluster diagram based on the provided keyword analysis and tag clusters.
+
+Rules:
+- Output ONLY valid SVG markup starting with <svg and ending with </svg>. No markdown, no explanation.
+- Use viewBox="0 0 1000 750" and width="100%". Do NOT set height attribute.
+- White background rect filling the viewBox
+- Use the provided tag clusters as your 3 main cluster groups
+- Place the most dominant theme as the central node
+- Each cluster contains 3-6 keyword sub-nodes arranged OUTSIDE and around it — satellite circles never inside or overlapping the cluster circle
+- Sub-node circles minimum radius 45px
+- Show relationships using solid lines (reinforcing) or dashed lines stroke-dasharray="6,3" (tension)
+- CRITICAL: lines connect only circle EDGES, never pass through circles. Given circles (x1,y1,r1) and (x2,y2,r2), dx=x2-x1, dy=y2-y1, dist=sqrt(dx*dx+dy*dy). Start=(x1+r1*dx/dist, y1+r1*dy/dist), End=(x2-r2*dx/dist, y2-r2*dy/dist)
+- Color each cluster using the color values in the tag cluster data
+- font-family="Arial, sans-serif". Min font sizes: 13px sub-nodes, 15px clusters, 18px center
+- Do NOT use JavaScript or external resources`,
+            messages: [{ role: 'user', content: `Generate a systems diagram SVG:\n\n${S.keywordNarrative || ''}\n\nTags: ${(S.tags||[]).join(', ')}\n\nTag clusters: ${JSON.stringify(S.tagClusters)}` }]
+          })
+        }).catch(() => null);
+        if (diagRes?.ok) {
+          const diagData = await diagRes.json().catch(() => null);
+          if (diagData && !diagData.error) {
+            trackUsage('Tag Diagram', diagData);
+            let svgRaw = (diagData.content||[]).map(b=>b.text||'').join('').trim();
+            const svgFence = svgRaw.match(/```(?:svg)?\s*([\s\S]+?)```/);
+            if (svgFence) svgRaw = svgFence[1].trim();
+            const svgStart = svgRaw.indexOf('<svg');
+            if (svgStart >= 0) svgRaw = svgRaw.slice(svgStart);
+            if (svgRaw.startsWith('<svg') && svgRaw.includes('</svg>')) {
+              svgRaw = svgRaw.replace(/\sheight\s*=\s*["']auto["']/gi, '').replace(/\swidth\s*=\s*["']auto["']/gi, '');
+              if (!/\swidth\s*=/.test(svgRaw)) svgRaw = svgRaw.replace('<svg', '<svg width="100%"');
+              else svgRaw = svgRaw.replace(/\swidth\s*=\s*["'][^"']*["']/, ' width="100%"');
+              S.tagDiagram = svgRaw;
+            }
           }
-          S.tagDiagram = svgRaw;
         }
       }
     } catch(e) { S.tagDiagram = ''; }
@@ -9361,9 +9432,7 @@ Rules:
     }
 
     // Warn if model hit token limit — response may be truncated
-    if (data.stop_reason === 'max_tokens') {
-      setStatus('busy', 'Response may be truncated — attempting to parse partial result…');
-    }
+    warnIfTruncated('Pass 2 — Main Analysis', data);
 
     trackUsage('AI Analysis', data);
     let raw = (data.content||[]).map(b=>b.text||'').join('').trim();
@@ -9717,6 +9786,7 @@ If no conflicts are found, return an empty gpsConflicts array.`;
       const data = await res.json();
       raw = (data.content||[]).map(b => b.text||'').join('');
       if (data.usage) { usage.totalRecordIn += data.usage.input_tokens||0; usage.totalRecordOut += data.usage.output_tokens||0; }
+      warnIfTruncated('Conflicts Scan', data);
       refreshUsageBadge();
 
     } else if (provider === 'openai') {
@@ -10823,15 +10893,115 @@ function dismissResearchToast() {
   if (toast) toast.style.transform = 'translateX(-50%) translateY(140%)';
 }
 
+// ── Auto-extract publication citation from a newly added image ──
+// Scans the image for a citation line (typically at the bottom) and
+// populates publisher, date, and page number if found.
+async function autoClassifyItem(idx) {
+  const img = S.extractedImages[idx];
+  if (!img || !img.dataURL) return;
+
+  try { if (!getApiKey()) return; } catch(e) { return; }
+
+  const base64 = img.dataURL.split(',')[1];
+  const mime   = (img.dataURL.match(/^data:([^;]+)/) || [])[1] || 'image/jpeg';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: apiHeaders(),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mime, data: base64 } },
+            { type: 'text',  text:
+              `Look only at the bottom of this image for a publication citation line matching this pattern:\n` +
+              `"Page {page number} of the {publisher name}, published in {location} on {date}"\n\n` +
+              `Example: "Page 2 of the Register And Argus, published in Elkader, Iowa on Thursday, March 2nd, 1911"\n\n` +
+              `If found, return the citation line verbatim as plain text.\n` +
+              `If not found, return the word: none`
+            }
+          ]
+        }]
+      })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const raw  = (data.content||[]).map(b => b.text||'').join('').trim()
+                   .replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+
+    // First try: regex match on the known Newspapers.com citation pattern
+    // "Page N of the {Publisher}, published in {Location} on {Date}"
+    const citMatch = raw.match(
+      /Page\s+(\S+)\s+of\s+(?:the\s+)?(.+?),\s+published\s+in\s+(.+?)\s+on\s+(.+?)(?:\.|$)/i
+    );
+    let parsed;
+    if (citMatch) {
+      parsed = {
+        page:        'Page ' + citMatch[1],
+        publication: citMatch[2].trim() + ', ' + citMatch[3].trim(),
+        date:        citMatch[4].trim()
+      };
+    } else {
+      // Fallback: parse AI JSON response
+      try { parsed = JSON.parse(raw); } catch(e) { return; }
+    }
+    if (!parsed || (!parsed.publication && !parsed.date && !parsed.page)) return;
+
+    const imgObj = S.extractedImages[idx];
+    if (!imgObj) return;
+
+    if (!imgObj.citSource    && parsed.publication) imgObj.citSource    = parsed.publication;
+    if (!imgObj.citPublisher && parsed.publication) imgObj.citPublisher = parsed.publication.split(',')[0].trim();
+    if (!imgObj.citDate      && parsed.date)        imgObj.citDate      = parsed.date;
+    if (!imgObj.citPage      && parsed.page)        imgObj.citPage      = parsed.page;
+
+    if (!imgObj.caption && parsed.date) {
+      const months = { january:1,february:2,march:3,april:4,may:5,june:6,
+                       july:7,august:8,september:9,october:10,november:11,december:12 };
+      const yearM  = parsed.date.match(/(\d{4})/);
+      const monM   = parsed.date.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i);
+      const dayM   = parsed.date.match(/\b(\d{1,2})(?:st|nd|rd|th)?\b/);
+      if (yearM && monM && dayM) {
+        const yr  = yearM[1];
+        const mo  = String(months[monM[1].toLowerCase()]).padStart(2, '0');
+        const dy  = dayM[1].padStart(2, '0');
+        imgObj.caption = `${yr} - ${mo}-${dy}`;
+      }
+    }
+
+    markDirty();
+    renderExtractedImages();
+
+    // Also update hidden DOM stubs so edit modal picks up the new values
+    const capEl = document.getElementById('eicap-' + idx);
+    const srcEl = document.getElementById('eisrc-' + idx);
+    if (capEl && imgObj.caption)    capEl.value = imgObj.caption;
+    if (srcEl && imgObj.citSource)  srcEl.value = imgObj.citSource;
+
+    if (parsed.publication || parsed.date) {
+      setStatus('ok', `✦ Citation auto-filled: ${imgObj.citPublisher || ''} · ${imgObj.citDate || ''}`);
+    }
+    trackUsage('Citation auto-fill', data);
+    return parsed;
+  } catch(e) {
+    console.warn('autoClassifyItem failed:', e.message);
+  }
+}
+
 async function onItemAdded(idx) {
   const img = S.extractedImages[idx];
   if (!img) return;
+  try { if (!getApiKey()) return; } catch(e) { return; }
 
-  // Only fire if we have content to analyze and an API key
+  // Step 1 — Auto-classify and extract metadata from the image
+  const classified = await autoClassifyItem(idx);
+
+  // Step 2 — Research significance (needs text to be meaningful)
   const itemText = [img.caption, img.citSource, img.citDate, img.extractedText]
     .filter(Boolean).map(s => s.trim()).join('\n').trim();
   if (!itemText) return;
-  try { if (!getApiKey()) return; } catch(e) { return; }
 
   // Show toast immediately with "Analyzing…"
   showResearchToast('Analyzing…');
@@ -10846,24 +11016,52 @@ async function onItemAdded(idx) {
     `A genealogical researcher just added this item to their research record:\n\n` +
     `--- NEW ITEM (Item ${img.seqNum||idx+1}) ---\n${itemText}\n\n` +
     (recordCtx ? `--- OTHER ITEMS IN RECORD ---\n${recordCtx}\n\n` : '') +
-    `In 1-2 sentences, tell the researcher specifically why this item matters to their research — ` +
-    `what it establishes, confirms, or opens up. Be specific, reference actual names/dates/places from the item. ` +
-    `No preamble, no "This item", just start with the insight.`;
+    `Return ONLY this JSON — no preamble, no markdown:\n` +
+    `{\n` +
+    `  "significance": "1-2 sentences: why this item matters to the research — what it establishes, confirms, or opens up. Be specific, reference actual names/dates/places. Do not start with 'This item'.",\n` +
+    `  "people": ["full name", ...],\n` +
+    `  "places": ["place name", ...],\n` +
+    `  "organizations": ["org name", ...],\n` +
+    `  "events": ["event description", ...]\n` +
+    `}`;
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
+        max_tokens: 400,
         messages: [{ role: 'user', content: prompt }]
       })
     });
     if (!res.ok) { dismissResearchToast(); return; }
     const data = await res.json();
-    const text = (data.content||[]).map(b => b.text||'').join('').trim();
+    const raw  = (data.content||[]).map(b => b.text||'').join('').trim()
+                   .replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch(e) { parsed = null; }
+
+    const text = parsed?.significance || raw; // fallback to raw if JSON parse failed
     if (text) {
       showResearchToast(text);
+      trackUsage('Research Significance', data);
+
+      // Merge extracted entities into record tags
+      const entityArrays = [
+        parsed?.people        || [],
+        parsed?.places        || [],
+        parsed?.organizations || [],
+        parsed?.events        || []
+      ];
+      let tagsAdded = 0;
+      entityArrays.forEach(arr => {
+        arr.forEach(val => {
+          const v = String(val||'').trim();
+          if (v && !S.tags.includes(v)) { S.tags.push(v); tagsAdded++; }
+        });
+      });
+      if (tagsAdded > 0) { renderTags(); markDirty(); }
+
       // Store permanently in the item and inject panel into the card
       const imgObj = S.extractedImages[idx];
       if (imgObj) {
@@ -10896,6 +11094,18 @@ async function onItemAdded(idx) {
     dismissResearchToast();
   }
 }
+// ── Warn user if any API response was truncated ───────────────
+function warnIfTruncated(callName, responseData) {
+  if (!responseData) return false;
+  if (responseData.stop_reason === 'max_tokens') {
+    const out = responseData.usage?.output_tokens || '?';
+    console.warn(`[${callName}] Response truncated at ${out} tokens (stop_reason: max_tokens)`);
+    setStatus('warn', `⚠ ${callName} truncated at ${Number(out).toLocaleString()} tokens — some data may be incomplete. Consider splitting this record.`);
+    return true;
+  }
+  return false;
+}
+
 function buildPublisherSummary() {
   const counts = {};
 
@@ -14770,9 +14980,55 @@ ${r.structuredAnalysis ? `
         var headStyle = s.top
           ? 'background:linear-gradient(120deg,#0f2a52,#1a4a8e)'
           : '';
+
+        // Dates & Time References — render as a timeline instead of a list
+        var isDates = /dates.*time|time.*references|🕐/i.test(s.head);
+        var bodyHtml;
+        if (isDates) {
+          var timelineItems = s.lines.filter(function(l){ return /^[-*\u2022] /.test(l); });
+          if (timelineItems.length) {
+            // Sort ascending chronologically by extracting year/date from each item
+            function extractSortKey(line) {
+              var text = line.replace(/^[-*\u2022] /,'');
+              // Try YYYY-MM-DD or YYYY/MM/DD
+              var m = text.match(/\b(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\b/);
+              if (m) return parseInt(m[1])*10000 + parseInt(m[2])*100 + parseInt(m[3]);
+              // Try "Month DD, YYYY" or "Month YYYY"
+              var months = {january:1,february:2,march:3,april:4,may:5,june:6,
+                            july:7,august:8,september:9,october:10,november:11,december:12};
+              var m2 = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i);
+              if (m2) return parseInt(m2[3])*10000 + (months[m2[1].toLowerCase()]||0)*100 + parseInt(m2[2]);
+              var m3 = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})\b/i);
+              if (m3) return parseInt(m3[2])*10000 + (months[m3[1].toLowerCase()]||0)*100;
+              // Try bare YYYY
+              var m4 = text.match(/\b(\d{4})\b/);
+              if (m4) return parseInt(m4[1])*10000;
+              return 0;
+            }
+            timelineItems.sort(function(a, b){ return extractSortKey(a) - extractSortKey(b); });
+            bodyHtml = '<div style="position:relative;padding-left:18pt">'
+              + '<div style="position:absolute;left:6pt;top:4pt;bottom:4pt;width:2pt;background:#c8d8e8;border-radius:1pt"></div>'
+              + timelineItems.map(function(l) {
+                  var text = ri(l.replace(/^[-*\u2022] /,''));
+                  // Try to pull a leading date/year out for the dot label
+                  var dateM = text.match(/^(<[^>]+>)*(\d{4}(?:[\/\-]\d{1,2}(?:[\/\-]\d{1,2})?)?|\w+ \d{1,2},? \d{4}|\w+ \d{4})/);
+                  return '<div style="position:relative;margin-bottom:7pt;padding-left:6pt">'
+                    + '<div style="position:absolute;left:-12pt;top:4pt;width:8pt;height:8pt;border-radius:50%;'
+                    + 'background:#1a4a8e;border:2pt solid #fff;box-shadow:0 0 0 1.5pt #c8d8e8"></div>'
+                    + '<div style="font-size:8.2pt;line-height:1.6;color:#2a3e58">' + text + '</div>'
+                    + '</div>';
+                }).join('')
+              + '</div>';
+          } else {
+            bodyHtml = renderLines(s.lines);
+          }
+        } else {
+          bodyHtml = renderLines(s.lines);
+        }
+
         cards.push('<div class="sa-card">' +
           '<div class="sa-card-head"' + (headStyle ? ' style="' + headStyle + '"' : '') + '>' + s.head + '</div>' +
-          '<div class="sa-card-body">' + renderLines(s.lines) + '</div>' +
+          '<div class="sa-card-body">' + bodyHtml + '</div>' +
           '</div>');
       }
     });
