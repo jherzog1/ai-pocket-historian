@@ -9362,6 +9362,7 @@ Rules:
     }
 
     // Process tag clusters
+    setFinalizingStatus('Building semantic tag clusters…');
     try {
       if (tagClusterRes && !tagClusterRes.error) {
         trackUsage('Tag Clusters', tagClusterRes);
@@ -9379,6 +9380,7 @@ Rules:
     } catch(e) { S.tagClusters = null; }
 
     // Process tag diagram SVG — runs AFTER clusters so S.tagClusters is populated
+    setFinalizingStatus('Generating cluster diagram…');
     try {
       if (S.tagClusters?.length >= 2) {
         const diagRes = await fetchWithTimeout(null, {
@@ -9440,6 +9442,7 @@ Rules:
 
     // Warn if model hit token limit — response may be truncated
     warnIfTruncated('Pass 2 — Main Analysis', data);
+    setFinalizingStatus('Parsing AI response…');
 
     trackUsage('AI Analysis', data);
     let raw = (data.content||[]).map(b=>b.text||'').join('').trim();
@@ -9526,6 +9529,7 @@ Rules:
     if (tagsAdded > 0) renderTags();
 
     // ── Store and render extracted data ───────────────────────
+    setFinalizingStatus('Applying extracted data…');
     S.timeline          = timeline;
     S.profiles          = profiles;
     S.events            = events;
@@ -11498,10 +11502,34 @@ function startGenerateStatusMessages() {
 
 function stopGenerateStatusMessages() {
   if (_statusMsgTimer) { clearInterval(_statusMsgTimer); _statusMsgTimer = null; }
+  document.getElementById('_finDetail')?.remove();
   const overlay   = document.getElementById('generateStatusOverlay');
   const frameWrap = document.getElementById('generateFrameWrap');
   if (overlay)   overlay.style.display = 'none';
   if (frameWrap) frameWrap.style.visibility = '';
+}
+
+function setFinalizingStatus(subText) {
+  if (_statusMsgTimer) { clearInterval(_statusMsgTimer); _statusMsgTimer = null; }
+  const list = document.getElementById('generateStatusList');
+  if (!list) return;
+
+  let detailEl = document.getElementById('_finDetail');
+  if (!detailEl) {
+    [...list.children].forEach(r => r.style.opacity = '0.35');
+    const m = _statusMessages[_statusMessages.length - 1];
+    const headerRow = document.createElement('div');
+    headerRow.style.cssText = 'display:flex;align-items:center;gap:14px;padding:10px 0;opacity:1';
+    headerRow.innerHTML = `<span style="font-size:22px;flex-shrink:0">${m.icon}</span>
+      <span style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:#e6c84a;font-weight:500">${m.text}</span>`;
+    list.appendChild(headerRow);
+    detailEl = document.createElement('div');
+    detailEl.id = '_finDetail';
+    detailEl.style.cssText = 'display:flex;align-items:center;gap:10px;padding:2px 0 2px 36px;opacity:0.9';
+    list.appendChild(detailEl);
+  }
+  detailEl.innerHTML = `<span style="font-size:12px;color:#a0b8d0;font-style:italic;flex:1">${esc(subText)}</span>
+    <span style="font-size:13px;color:#4a7a9a">⏳</span>`;
 }
 
 // ── JSON-LD Generation — runs after main analysis ────────────
