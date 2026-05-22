@@ -13893,15 +13893,14 @@ function buildPrintHtml(r, forPane=false) {
   function _tagCluster(tag) {
     // Use AI-generated clusters when available
     if (r.tagClusters && r.tagClusters.length) {
+      const norm = tag.trim().toLowerCase();
       for (const cl of r.tagClusters) {
-        if ((cl.tags||[]).some(t => t.toLowerCase() === tag.toLowerCase())) {
-          // Derive a light bg from the color
-          return { color: cl.color, bg: cl.color + '18', name: cl.name };
+        if ((cl.tags||[]).some(t => t.trim().toLowerCase() === norm)) {
+          return { color: cl.color, bg: cl.color + '33', name: cl.name };
         }
       }
     }
-    // Fallback — unclustered tags get white
-    return { color: '#555', bg: '#fff' };
+    return null; // no cluster — let CSS class handle styling
   }
 
   // Build a single lowercase text blob from all items for tag frequency counting
@@ -13916,12 +13915,12 @@ function buildPrintHtml(r, forPane=false) {
         while ((pos = _allItemText.indexOf(tl, pos)) !== -1) { count++; pos += tl.length; }
         const cl = _tagCluster(t);
         const badge = count > 1
-          ? `<span style="display:inline-block;background:${cl.color};
+          ? `<span style="display:inline-block;background:${cl ? e(cl.color) : '#888'};
                           color:#fff;font-size:6.5pt;font-weight:700;padding:0 4pt;
                           border-radius:8pt;margin-left:3pt;vertical-align:middle">${count}</span>`
           : '';
-        return `<span class="tag" style="background:${cl.bg};color:${cl.color};
-                  border:1px solid ${cl.color}40">${e(t)}${badge}</span>`;
+        const clStyle = cl ? ` style="background:${e(cl.bg)};color:${e(cl.color)};border:1px solid ${e(cl.color)}40"` : '';
+        return `<span class="tag"${clStyle}>${e(t)}${badge}</span>`;
       }).join('')}</div>
       ${r.tagClusters && r.tagClusters.length ? `<div style="display:flex;gap:10pt;flex-wrap:wrap;margin-top:8pt;padding-top:6pt;border-top:1px solid #dde5ef">
         ${r.tagClusters.map(cl => `<span style="display:flex;align-items:center;gap:5pt;font-size:7pt;color:#555">
