@@ -8098,8 +8098,24 @@ function renderExtractedImages() {
 
   strip.innerHTML = '';
 
-  const _totalWc = S.extractedImages.reduce((s, img) =>
-    s + (img.extractedText||'').split(/\s+/).filter(Boolean).length, 0);
+  // ── Content-importance scoring (TF-IDF inspired) ──────────────
+  // Words unique to fewer items carry more information weight.
+  // Stopwords and short tokens are excluded so only meaningful
+  // content words contribute to each item's importance score.
+  const _STOP = new Set('the a an and or but in on at to for of with by from up about into through during before after above below between out off over under again further then once here there when where why how all both each few more most other some such no nor not only own same so than too very can will just should now i me my we our you your he him his she her it its they them their what which who whom this that these those am is are was were be been being have has had do does did would could may might must shall also'.split(' '));
+  const _itemTokens = S.extractedImages.map(img => {
+    const ws = (img.extractedText||'').toLowerCase().match(/[a-z']+/g) || [];
+    return ws.filter(w => w.length > 2 && !_STOP.has(w));
+  });
+  const _df = {};
+  _itemTokens.forEach(ws => new Set(ws).forEach(w => { _df[w] = (_df[w]||0) + 1; }));
+  const _N = _itemTokens.length || 1;
+  const _itemScores = _itemTokens.map(ws => {
+    let s = 0;
+    new Set(ws).forEach(w => { s += Math.log(1 + _N / (_df[w]||1)); });
+    return s;
+  });
+  const _maxScore = Math.max(..._itemScores, 1);
 
   getSortedIndices().forEach(i => {
     const img     = S.extractedImages[i];
@@ -8139,12 +8155,13 @@ function renderExtractedImages() {
                 margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">
             ${img.ocrAt ? `<span style="color:var(--txf);font-size:13px" title="OCR completed ${fmtOcrAt(img.ocrAt)}">⏱ ${fmtOcrAt(img.ocrAt)}</span>` : ''}
             ${wc ? (() => {
-              const pct = _totalWc > 0 ? wc / _totalWc : 0;
-              const barW = Math.max(2, Math.round(pct * 48));
-              const col = pct > 0.35 ? '#e05555' : pct > 0.18 ? '#c8920a' : '#4a9ede';
+              const imp  = _itemScores[i] / _maxScore;
+              const barW = Math.max(2, Math.round(imp * 48));
+              const col  = imp > 0.65 ? '#e05555' : imp > 0.35 ? '#c8920a' : '#4a9ede';
+              const pct  = Math.round(imp * 100);
               return `<span style="display:inline-flex;align-items:center;gap:4px;color:var(--bl)">
                 <span style="font-size:13px">${wc}w</span>
-                <svg width="52" height="8" style="flex-shrink:0;vertical-align:middle" title="${Math.round(pct*100)}% of total words">
+                <svg width="52" height="8" style="flex-shrink:0;vertical-align:middle" title="Content importance: ${pct}% (based on unique information density)">
                   <rect x="0" y="1" width="52" height="6" rx="3" fill="var(--s3)" stroke="var(--bd)" stroke-width=".5"/>
                   <rect x="0" y="1" width="${barW}" height="6" rx="3" fill="${col}" opacity=".85"/>
                 </svg>
