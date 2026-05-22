@@ -8098,6 +8098,9 @@ function renderExtractedImages() {
 
   strip.innerHTML = '';
 
+  const _totalWc = S.extractedImages.reduce((s, img) =>
+    s + (img.extractedText||'').split(/\s+/).filter(Boolean).length, 0);
+
   getSortedIndices().forEach(i => {
     const img     = S.extractedImages[i];
     const itemNum = img.seqNum || (i + 1);
@@ -8135,7 +8138,18 @@ function renderExtractedImages() {
           <div style="font-size:14px;color:var(--txf);
                 margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">
             ${img.ocrAt ? `<span style="color:var(--txf);font-size:13px" title="OCR completed ${fmtOcrAt(img.ocrAt)}">⏱ ${fmtOcrAt(img.ocrAt)}</span>` : ''}
-            ${wc ? `<span style="color:var(--bl)">${wc}w</span>` : ''}
+            ${wc ? (() => {
+              const pct = _totalWc > 0 ? wc / _totalWc : 0;
+              const barW = Math.max(2, Math.round(pct * 48));
+              const col = pct > 0.35 ? '#e05555' : pct > 0.18 ? '#c8920a' : '#4a9ede';
+              return `<span style="display:inline-flex;align-items:center;gap:4px;color:var(--bl)">
+                <span style="font-size:13px">${wc}w</span>
+                <svg width="52" height="8" style="flex-shrink:0;vertical-align:middle" title="${Math.round(pct*100)}% of total words">
+                  <rect x="0" y="1" width="52" height="6" rx="3" fill="var(--s3)" stroke="var(--bd)" stroke-width=".5"/>
+                  <rect x="0" y="1" width="${barW}" height="6" rx="3" fill="${col}" opacity=".85"/>
+                </svg>
+              </span>`;
+            })() : ''}
             ${img.citPublisher ? `<span style="color:var(--aml)">${esc(img.citPublisher)}</span>` : ''}
             ${srcLine ? `<span>${esc(srcLine)}</span>` : ''}
             ${img.sourceFileName ? `<span style="color:var(--txf)">📄 ${esc(img.sourceFileName)}</span>` : ''}
