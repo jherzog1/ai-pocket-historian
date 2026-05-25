@@ -120,6 +120,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
   color:var(--tx);
   background:var(--s3);
 }
+.tab:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 .tab.on{
   color:#3a2800;
   font-weight:700;
@@ -481,6 +482,33 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
 .ei-accordion .ei-header:active { background:var(--s3); }
 .ei-accordion .ei-header { box-sizing:border-box; }
 
+/* ── Item List: 2-column layout at desktop widths (>800px) ──── */
+/* Column 1: existing ei-header (image + metadata); Column 2: research significance */
+@media (min-width: 801px) {
+  .ei-accordion {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+  }
+  /* Research significance moves from a stacked accordion panel to column 2.
+     Swap the horizontal divider for a vertical one. */
+  .ei-accordion > [id^="eisig-"] {
+    border-top: none !important;
+    border-left: 1px solid var(--bd);
+  }
+  /* No expand/collapse needed — significance is always visible in column 2 */
+  .ei-accordion > [id^="eisig-"] [id^="eisig-chevron-"] {
+    display: none;
+  }
+  /* Remove the clickable affordance from the former toggle header */
+  .ei-accordion > [id^="eisig-"] > button {
+    cursor: default !important;
+  }
+  /* Override toggleSigPanel's inline display:none so the text is always shown */
+  .ei-accordion > [id^="eisig-"] [id^="eisig-body-"] {
+    display: block !important;
+  }
+}
+
 /* Gallery / Pinterest layout */
 #imgStrip.gallery-mode {
   display: block;
@@ -527,7 +555,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
   height: auto;
   object-fit: contain;
   display: block;
-  margin: 0 auto;
+  margin: 12px auto;
   background: var(--s1);
 }
 .ei-gallery-card .gi-text {
@@ -918,6 +946,17 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
                   onmouseout="this.style.background='none'">
             📂 Open Record
           </button>
+          <!-- Save Record (always shown when a record is loaded) -->
+          <button id="btnOverflowSaveAlways"
+                  onclick="confirmSave();closeToolbarOverflow()"
+                  style="display:none;align-items:center;gap:8px;width:100%;background:none;
+                         border:none;cursor:pointer;
+                         padding:10px 14px;font-size:15px;color:var(--am);text-align:left;
+                         transition:background .15s"
+                  onmouseover="this.style.background='var(--s3)'"
+                  onmouseout="this.style.background='none'">
+            💾 Save Record
+          </button>
           <!-- Close Record — only when a record is loaded -->
           <button id="btnOverflowClose"
                   onclick="overflowCloseRecord();closeToolbarOverflow()"
@@ -1031,7 +1070,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
                 disabled
                 onclick="doCombinedAnalysis()"
                 title="Run cross-record analysis across all open records"
-                style="display:none;font-size:13px;padding:2px 10px;font-weight:600;
+                style="display:none !important;font-size:13px;padding:2px 10px;font-weight:600;
                        letter-spacing:.03em;border:1px solid var(--bl);border-radius:3px;
                        cursor:pointer;background:rgba(74,158,222,.1);color:var(--bl);
                        white-space:nowrap;flex-shrink:0;
@@ -1067,7 +1106,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
         <button class="tab on" id="extractTabBtn"   onclick="showTab('extract',this)">Sources</button>
         <button class="tab"    id="conflictsTabBtn" onclick="showTab('conflicts',this)" disabled>Conflicts</button>
         <button class="tab"    id="queryTabBtn"     onclick="showTab('query',this)"     disabled>Chat</button>
-        <button class="tab"    id="jsonldTabBtn"    onclick="showTab('jsonld',this)"    disabled>Analysis</button>
+        <button class="tab"    id="jsonldTabBtn"    onclick="showTab('jsonld',this)"    >Analysis</button>
       </div>
 
       <!-- EXTRACT PANE -->
@@ -1089,13 +1128,12 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
             <!-- Add Sources button — shown only when record is open -->
             <button id="btnAddSources" onclick="openAddImageModal()"
                     title="Add images, text or audio to the record"
-                    style="font-size:14px;padding:3px 14px;white-space:nowrap;display:none;
-                           font-weight:700;border:none;border-radius:4px;cursor:pointer;
-                           background:linear-gradient(135deg,#f5e07a 0%,#c8a832 45%,#f5e07a 70%,#a07820 100%);
-                           color:#3a2800;
-                           box-shadow:0 1px 5px rgba(200,168,50,.5), inset 0 1px 0 rgba(255,255,255,.45);
-                           text-shadow:0 1px 0 rgba(255,255,255,.3);letter-spacing:.04em">
-              ⊕ Add
+                    style="font-size:20px;line-height:1;padding:1px 10px;white-space:nowrap;display:none;
+                           font-weight:400;border:none;border-radius:4px;cursor:pointer;
+                           background:#3dba72;
+                           color:#fff;
+                           box-shadow:0 1px 5px rgba(61,186,114,.45);">
+              +
             </button>
             <span id="queueGroup" style="display:none;align-items:center;gap:5px">
               <span class="lbl" style="margin:0">OCR Queue</span>
@@ -2529,7 +2567,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
               <span class="sig-badge">AI generated</span>
             </div>
             <textarea id="iemSigText" rows="3"
-                      style="width:100%;box-sizing:border-box;resize:vertical;
+                      style="width:100%;box-sizing:border-box;resize:vertical;min-height:96px;
                              font-size:13px !important;line-height:1.7 !important;
                              padding:7px 10px !important;border-radius:4px !important;
                              background:var(--s2) !important;border:none !important;
@@ -3110,9 +3148,7 @@ function refreshActionButtons() {
                       S.tags.length > 0 || S.citations.length > 0);
   const enabled = !!(hasItems || hasAnnotate);
 
-  // AI Analysis tab
-  const jsonldTab = document.getElementById('jsonldTabBtn');
-  if (jsonldTab && !S.scanning) jsonldTab.disabled = !enabled;
+  // AI Analysis tab — never disabled
   const conflictsTab = document.getElementById('conflictsTabBtn');
   if (conflictsTab && !S.scanning) conflictsTab.disabled = !enabled;
 
@@ -3149,11 +3185,9 @@ function refreshGenerateBtn() {
   if (!btn) return;
   const hasItems = S.extractedImages.length > 0 || S.records.length > 0;
   btn.disabled = !hasItems;
-  // Also enable the Analysis, Conflicts, and Chat tabs as soon as there is something to work with
-  const jsonldTab    = document.getElementById('jsonldTabBtn');
+  // Enable Conflicts and Chat tabs as soon as there is something to work with
   const conflictsTab = document.getElementById('conflictsTabBtn');
   const queryTab     = document.getElementById('queryTabBtn');
-  if (jsonldTab)    jsonldTab.disabled    = !hasItems;
   if (conflictsTab) conflictsTab.disabled = !hasItems;
   if (queryTab)     queryTab.disabled     = !hasItems;
 }
@@ -3485,6 +3519,13 @@ function refreshSourceTabButtons() {
     btnOverflowClose.style.display = hasRecord ? 'flex' : 'none';
   }
 
+  // Save Record (always-on) overflow button — visible whenever a record is loaded,
+  // regardless of dirty state
+  const btnOverflowSaveAlways = document.getElementById('btnOverflowSaveAlways');
+  if (btnOverflowSaveAlways) {
+    btnOverflowSaveAlways.style.display = hasRecord ? 'flex' : 'none';
+  }
+
   // Usage badge — only when a record is loaded
   const usage = document.getElementById('usageBadge');
   if (usage && !hasRecord) usage.style.display = 'none';
@@ -3676,8 +3717,7 @@ function setSaveVisible(visible) {
   } else {
     document.querySelectorAll('.save-record-btn').forEach(b => { b.style.display = 'none'; });
     if (toolbarRow) toolbarRow.style.padding = '0 8px';
-    const jsonldTab = document.getElementById('jsonldTabBtn');
-    if (jsonldTab && !S.scanning) jsonldTab.disabled = true;
+    // Analysis tab always remains enabled
     const conflictsTabEl = document.getElementById('conflictsTabBtn');
     if (conflictsTabEl && !S.scanning) conflictsTabEl.disabled = true;
   }
@@ -5956,7 +5996,11 @@ function itemEditSave() {
   if (prevBtn) prevBtn.disabled = false;
   if (nextBtn) nextBtn.disabled = false;
   renderExtractedImages(); // update ● indicator in list
-  setStatus('ok', 'Item saved');
+  const _staleResolved = checkAndResolveStaleConflicts();
+  if (_staleResolved > 0) renderConflictsSubpane();
+  setStatus('ok', _staleResolved > 0
+    ? `Item saved · ${_staleResolved} conflict${_staleResolved !== 1 ? 's' : ''} auto-resolved (source edited)`
+    : 'Item saved');
   updateDirtyIndicator();
   // Update title to reflect saved caption
   if (i >= 0 && S.extractedImages[i]) {
@@ -7503,15 +7547,7 @@ function selectApiProvider(id) {
 function updateCombinedBtn() {
   const btn = document.getElementById('btnCombinedAnalysis');
   if (!btn) return;
-  const savedIds  = new Set(S.records.map(r => r.id));
-  const hasActive = S.lastSavedId && !savedIds.has(S.lastSavedId) && S.extractedImages.length > 0;
-  const count     = S.records.length + (hasActive ? 1 : 0);
-  const onChat    = document.getElementById('queryTabBtn')?.classList.contains('on');
-  btn.style.display = (count >= 2 && onChat) ? '' : 'none';
-  btn.disabled      = count < 2;
-  btn.title         = count >= 2
-    ? `Run combined analysis across all ${count} open records`
-    : 'Open 2 or more records to enable combined analysis';
+  btn.style.display = 'none';
 }
 
 async function doCombinedAnalysis() {
@@ -8107,6 +8143,25 @@ function renderExtractedImages() {
 
   strip.innerHTML = '';
 
+  // ── Content-importance scoring (TF-IDF inspired) ──────────────
+  // Words unique to fewer items carry more information weight.
+  // Stopwords and short tokens are excluded so only meaningful
+  // content words contribute to each item's importance score.
+  const _STOP = new Set('the a an and or but in on at to for of with by from up about into through during before after above below between out off over under again further then once here there when where why how all both each few more most other some such no nor not only own same so than too very can will just should now i me my we our you your he him his she her it its they them their what which who whom this that these those am is are was were be been being have has had do does did would could may might must shall also'.split(' '));
+  const _itemTokens = S.extractedImages.map(img => {
+    const ws = (img.extractedText||'').toLowerCase().match(/[a-z']+/g) || [];
+    return ws.filter(w => w.length > 2 && !_STOP.has(w));
+  });
+  const _df = {};
+  _itemTokens.forEach(ws => new Set(ws).forEach(w => { _df[w] = (_df[w]||0) + 1; }));
+  const _N = _itemTokens.length || 1;
+  const _itemScores = _itemTokens.map(ws => {
+    let s = 0;
+    new Set(ws).forEach(w => { s += Math.log(1 + _N / (_df[w]||1)); });
+    return s;
+  });
+  const _maxScore = Math.max(..._itemScores, 1);
+
   getSortedIndices().forEach(i => {
     const img     = S.extractedImages[i];
     const itemNum = img.seqNum || (i + 1);
@@ -8123,28 +8178,40 @@ function renderExtractedImages() {
     // ── Accordion header (always visible) ──
     row.innerHTML = `
       <button class="ei-header" onclick="openItemEditModal(${i})"
-           style="display:flex;align-items:center;gap:8px;padding:7px 10px;
+           style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;
                   background:var(--s1);border:none;cursor:pointer;width:100%;text-align:left;min-height:44px;
                   -webkit-tap-highlight-color:rgba(230,200,74,.2)">
         ${hasImg
           ? `<img src="${img.dataURL}" alt="" style="width:110px;height:110px;object-fit:cover;object-position:top;
                border-radius:2px;flex-shrink:0;border:1px solid var(--bd)">`
-          : `<div style="width:55px;height:55px;background:var(--s2);border:1px solid var(--bd);
+          : `<div style="width:110px;height:110px;background:var(--s2);border:1px solid var(--bd);
                border-radius:2px;flex-shrink:0;display:flex;align-items:center;
-               justify-content:center;font-size:20px">${img.caption === 'Audio Transcription' ? '🎤' : '📄'}</div>`
+               justify-content:center;font-size:32px">${img.caption === 'Audio Transcription' ? '🎤' : '📄'}</div>`
         }
         <div style="flex:1;min-width:0;overflow:hidden">
-          <div style="display:flex;align-items:center;gap:7px">
+          <div style="display:flex;align-items:flex-start;gap:7px">
             <span style="font-size:14px;font-weight:700;
                   color:var(--aml);flex-shrink:0">Item ${itemNum}${_editedItems.has(i) ? ' <span style="color:var(--am);font-size:20px;line-height:1" title="Edited">●</span>' : ''}</span>
             <span id="eiLabel-${i}" style="font-size:17px;color:var(--txd);
-                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  word-break:break-word">
               ${esc(caption || (img.isTextOnly ? 'Text Only' : 'No caption'))}</span>
           </div>
           <div style="font-size:14px;color:var(--txf);
                 margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">
             ${img.ocrAt ? `<span style="color:var(--txf);font-size:13px" title="OCR completed ${fmtOcrAt(img.ocrAt)}">⏱ ${fmtOcrAt(img.ocrAt)}</span>` : ''}
-            ${wc ? `<span style="color:var(--bl)">${wc}w</span>` : ''}
+            ${wc ? (() => {
+              const imp  = _itemScores[i] / _maxScore;
+              const barW = Math.max(2, Math.round(imp * 48));
+              const col  = imp > 0.65 ? '#e05555' : imp > 0.35 ? '#c8920a' : '#4a9ede';
+              const pct  = Math.round(imp * 100);
+              return `<span style="display:inline-flex;align-items:center;gap:4px;color:var(--bl)">
+                <span style="font-size:13px">${wc}w</span>
+                <svg width="52" height="8" style="flex-shrink:0;vertical-align:middle" title="Content importance: ${pct}% (based on unique information density)">
+                  <rect x="0" y="1" width="52" height="6" rx="3" fill="var(--s3)" stroke="var(--bd)" stroke-width=".5"/>
+                  <rect x="0" y="1" width="${barW}" height="6" rx="3" fill="${col}" opacity=".85"/>
+                </svg>
+              </span>`;
+            })() : ''}
             ${img.citPublisher ? `<span style="color:var(--aml)">${esc(img.citPublisher)}</span>` : ''}
             ${srcLine ? `<span>${esc(srcLine)}</span>` : ''}
             ${img.sourceFileName ? `<span style="color:var(--txf)">📄 ${esc(img.sourceFileName)}</span>` : ''}
@@ -8949,7 +9016,7 @@ const overlay = document.getElementById('jsonldScanOverlay');
   const statusEl= document.getElementById('jsonldStatus');
   overlay.style.display = 'flex';
   tabBtn.textContent    = 'Analysis';
-  tabBtn.disabled       = true;
+  // tabBtn (Analysis) stays enabled during scan so user can see progress
   const conflictsTabDis = document.getElementById('conflictsTabBtn');
   if (conflictsTabDis) conflictsTabDis.disabled = true;
   document.getElementById('btnRegenLD').disabled = true;
@@ -9358,6 +9425,7 @@ Rules:
     }
 
     // Process tag clusters
+    setFinalizingStatus('Building semantic tag clusters…');
     try {
       if (tagClusterRes && !tagClusterRes.error) {
         trackUsage('Tag Clusters', tagClusterRes);
@@ -9367,11 +9435,15 @@ Rules:
         if (tcFence) tcRaw = tcFence[1].trim();
         tcRaw = tcRaw.replace(/^[^{]*/,'').trim();
         const tcParsed = JSON.parse(tcRaw);
-        if (tcParsed?.clusters?.length >= 2) S.tagClusters = tcParsed.clusters;
+        if (tcParsed?.clusters?.length >= 2) {
+          S.tagClusters = tcParsed.clusters;
+          renderTags();
+        }
       }
     } catch(e) { S.tagClusters = null; }
 
     // Process tag diagram SVG — runs AFTER clusters so S.tagClusters is populated
+    setFinalizingStatus('Generating cluster diagram…');
     try {
       if (S.tagClusters?.length >= 2) {
         const diagRes = await fetchWithTimeout(null, {
@@ -9433,6 +9505,7 @@ Rules:
 
     // Warn if model hit token limit — response may be truncated
     warnIfTruncated('Pass 2 — Main Analysis', data);
+    setFinalizingStatus('Parsing AI response…');
 
     trackUsage('AI Analysis', data);
     let raw = (data.content||[]).map(b=>b.text||'').join('').trim();
@@ -9519,6 +9592,7 @@ Rules:
     if (tagsAdded > 0) renderTags();
 
     // ── Store and render extracted data ───────────────────────
+    setFinalizingStatus('Applying extracted data…');
     S.timeline          = timeline;
     S.profiles          = profiles;
     S.events            = events;
@@ -9591,7 +9665,7 @@ Rules:
     }
   } finally {
     _scanCancelled  = false;
-  _scanInProgress = true;
+  _scanInProgress = false;
     if (stopBtn) stopBtn.style.display = 'none';
     overlay.style.display = 'none';
     const btnRegen = document.getElementById('btnRegenLD');
@@ -9860,6 +9934,11 @@ If no conflicts are found, return an empty gpsConflicts array.`;
           autoResolvedCount++;
           return { ...old, _resolved: true, _resolution: 'Auto-resolved: AI determined conflict no longer present in source text' };
         }
+        // AI was asked to re-evaluate this conflict but returned no conflicts at all — treat as resolved
+        if (conflicts.length === 0) {
+          autoResolvedCount++;
+          return { ...old, _resolved: true, _resolution: 'Auto-resolved: No conflicts found on re-scan' };
+        }
         return old;
       });
 
@@ -10124,7 +10203,7 @@ function _loadRecordIntoSessionWork(record) {
   // Re-enable Analysis/Conflicts tabs based on loaded record data
   const _jtbL = document.getElementById('jsonldTabBtn');
   const _ctbL = document.getElementById('conflictsTabBtn');
-  if (_jtbL) _jtbL.disabled = !record.jsonLD;
+  if (_jtbL) _jtbL.disabled = false;
   if (_ctbL) _ctbL.disabled = false;
   S.lastConflictAt    = record.lastConflictAt || null;
   S.lastGenerateAt      = record.lastGenerateAt || null;
@@ -10694,6 +10773,62 @@ function switchAnalysisSubTab(tab) {
 }
 
 // Global helper: linkify "Item N" references in conflict statements → opens edit modal
+function isConflictStale(c) {
+  if (c._resolved) return false;
+
+  const extractPhrase = stmt => {
+    const pm = String(stmt || '').match(/\bItem\s+(?:number\s+)?\d+\s*[—\-–:]\s*(.*)/i);
+    return pm ? pm[1].trim().toLowerCase() : '';
+  };
+  const sigWords = phrase => new Set(phrase.split(/\W+/).filter(w => w.length > 3));
+
+  const phrase1 = extractPhrase(c.item1);
+  const phrase2 = extractPhrase(c.item2);
+  const words1  = sigWords(phrase1);
+  const words2  = sigWords(phrase2);
+
+  return [
+    { stmt: c.item1, phrase: phrase1, own: words1, other: words2 },
+    { stmt: c.item2, phrase: phrase2, own: words2, other: words1 }
+  ].some(({ stmt, phrase, own, other }) => {
+    const m = String(stmt || '').match(/\bItem\s+(?:number\s+)?(\d+)/i);
+    if (!m) return false;
+    const itemNum = parseInt(m[1], 10);
+    const img = S.extractedImages.find(img => (img.seqNum || 0) === itemNum)
+             || S.extractedImages[itemNum - 1];
+    if (!img) return false;
+    const cur = ((img.caption||'') + ' ' + (img.extractedText||'') + ' ' + (img.citSource||'')).toLowerCase();
+    if (!cur.trim() || !phrase) return false;
+
+    // Digit numbers are unambiguous — any missing means a specific value changed
+    const nums = phrase.match(/\b\d+\b/g) || [];
+    if (nums.length > 0 && nums.some(n => !new RegExp('\\b' + n + '\\b').test(cur))) return true;
+
+    // Words unique to this side of the conflict are the actual conflicting tokens.
+    // If any distinguishing word is gone the specific claim was edited out.
+    const distinguishing = [...own].filter(w => !other.has(w));
+    if (distinguishing.length > 0 && distinguishing.some(w => !cur.includes(w))) return true;
+
+    // Fallback: large overall word-overlap drop
+    if (own.size === 0) return false;
+    return [...own].filter(w => cur.includes(w)).length / own.size < 0.5;
+  });
+}
+
+function checkAndResolveStaleConflicts() {
+  let count = 0;
+  (S._conflicts || []).forEach(c => {
+    if (!c._resolved && isConflictStale(c)) {
+      c._resolved   = true;
+      c._stale      = true;
+      c._resolution = 'Auto-resolved: source text was edited and no longer contains the original conflicting statements';
+      count++;
+    }
+  });
+  if (count > 0) { markDirty(); refreshSourceTabButtons(); }
+  return count;
+}
+
 function linkifyConflictStmt(text) {
   const escStr = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   // Match formats the AI actually generates:
@@ -10711,6 +10846,7 @@ function linkifyConflictStmt(text) {
 }
 
 function renderConflictsSubpane() {
+  checkAndResolveStaleConflicts();
   const cd = document.getElementById('conflictsDisplay');
   const statusEl = document.getElementById('conflictsStatus');
   if (!cd) return;
@@ -10769,14 +10905,27 @@ function renderConflictsSubpane() {
       const col = sevColor[sev] || sevColor.medium;
       const borderCol = c._resolved ? '#2e7d32' : col;
       const cardOpacity = '';
-      const sevSt = c._resolved ? 'text-decoration:line-through;color:#2e7d32;border-color:#2e7d32;background:rgba(170,255,68,.1);' : `color:${col};border:1px solid ${col};background:${col}18;`;
-      const titCol = c._resolved ? '#2e7d32' : 'var(--aml)';
-      const resolvedBadge = c._resolved ? ` <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px">✔ Resolved</span>` : '';
+      const sevSt = c._resolved
+        ? (c._stale
+            ? 'text-decoration:line-through;color:#e05555;border-color:#e05555;background:rgba(224,85,85,.1);'
+            : 'text-decoration:line-through;color:#2e7d32;border-color:#2e7d32;background:rgba(170,255,68,.1);')
+        : `color:${col};border:1px solid ${col};background:${col}18;`;
+      const titCol = c._resolved ? (c._stale ? '#c84444' : '#2e7d32') : 'var(--aml)';
+      const resolvedBadge = c._resolved
+        ? (c._stale
+            ? ` <span style="color:#e05555;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(224,85,85,.12);border:1px solid rgba(224,85,85,.4);border-radius:3px;padding:1px 6px">✕ Source edited</span>`
+            : ` <span style="color:#00e676;font-size:14px;font-weight:700;letter-spacing:.04em;background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);border-radius:3px;padding:1px 6px">✔ Resolved</span>`)
+        : '';
+      const sevBadgeHtml = c._stale
+        ? `<span style="position:relative;display:inline-flex;align-items:center;justify-content:center">
+            <span style="font-size:13px;font-weight:700;letter-spacing:.08em;padding:1px 6px;border-radius:2px;border:1px solid;${sevSt}">${sev.toUpperCase()}</span>
+            <span style="position:absolute;color:#e05555;font-size:20px;font-weight:900;pointer-events:none;line-height:1;opacity:.85">✕</span>
+           </span>`
+        : `<span style="font-size:13px;font-weight:700;letter-spacing:.08em;padding:1px 6px;border-radius:2px;border:1px solid;${sevSt}">${sev.toUpperCase()}</span>`;
       return `<div id="conflict-card-${i}" style="background:var(--s3);border:1px solid var(--bd);
                    border-left:3px solid ${borderCol};border-radius:3px;padding:11px 13px;margin-bottom:8px;${cardOpacity}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size:13px;font-weight:700;
-                letter-spacing:.08em;padding:1px 6px;border-radius:2px;border:1px solid;${sevSt}">${sev.toUpperCase()}</span>
+          ${sevBadgeHtml}
           <span id="conflict-title-${i}" style="font-family:'Playfair Display',serif;font-size:20px;color:${titCol};flex:1"
                 ${c._resolved ? 'data-resolved="1"' : ''}>${i+1}. ${esc(c.subject)}${resolvedBadge}</span>
           <button onclick="deleteConflict(${i})" title="Remove this conflict"
@@ -11169,22 +11318,9 @@ function buildPublisherSummary() {
 }
 
 function renderEvents() {
+  // Events are merged into the timeline (Dates & Time References) — hide standalone section
   const section = document.getElementById('eventsSection');
-  const list    = document.getElementById('eventsList');
-  if (!section || !list) return;
-  const events = S.events || [];
-  if (!events.length) { section.style.display = 'none'; return; }
-  section.style.display = '';
-  list.innerHTML = events.map((ev, i) => `
-    <div style="padding:10px 12px;{i < events.length-1 ? '1px solid var(--bd)' : 'none'}">
-      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
-        ${ev.date ? `<span style="font-size:14px;color:var(--aml);flex-shrink:0">${esc(ev.date)}</span>` : ''}
-        <span style="font-size:18px;font-weight:600;color:var(--txd)">${esc(ev.name||'')}</span>
-        ${ev.location ? `<span style="font-size:14px;color:var(--txf)">${esc(ev.location)}</span>` : ''}
-      </div>
-      <div style="font-size:17px;color:var(--tx);line-height:1.6;font-family:'Georgia',serif">${esc(ev.summary||'')}</div>
-      ${ev.persons ? `<div style="font-size:14px;color:var(--txf);margin-top:4px">👤 ${esc(ev.persons)}</div>` : ''}
-    </div>`).join('');
+  if (section) section.style.display = 'none';
 }
 
 function renderProfiles() {
@@ -11416,10 +11552,34 @@ function startGenerateStatusMessages() {
 
 function stopGenerateStatusMessages() {
   if (_statusMsgTimer) { clearInterval(_statusMsgTimer); _statusMsgTimer = null; }
+  document.getElementById('_finDetail')?.remove();
   const overlay   = document.getElementById('generateStatusOverlay');
   const frameWrap = document.getElementById('generateFrameWrap');
   if (overlay)   overlay.style.display = 'none';
   if (frameWrap) frameWrap.style.visibility = '';
+}
+
+function setFinalizingStatus(subText) {
+  if (_statusMsgTimer) { clearInterval(_statusMsgTimer); _statusMsgTimer = null; }
+  const list = document.getElementById('generateStatusList');
+  if (!list) return;
+
+  let detailEl = document.getElementById('_finDetail');
+  if (!detailEl) {
+    [...list.children].forEach(r => r.style.opacity = '0.35');
+    const m = _statusMessages[_statusMessages.length - 1];
+    const headerRow = document.createElement('div');
+    headerRow.style.cssText = 'display:flex;align-items:center;gap:14px;padding:10px 0;opacity:1';
+    headerRow.innerHTML = `<span style="font-size:22px;flex-shrink:0">${m.icon}</span>
+      <span style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;color:#e6c84a;font-weight:500">${m.text}</span>`;
+    list.appendChild(headerRow);
+    detailEl = document.createElement('div');
+    detailEl.id = '_finDetail';
+    detailEl.style.cssText = 'display:flex;align-items:center;gap:10px;padding:2px 0 2px 36px;opacity:0.9';
+    list.appendChild(detailEl);
+  }
+  detailEl.innerHTML = `<span style="font-size:12px;color:#a0b8d0;font-style:italic;flex:1">${esc(subText)}</span>
+    <span style="font-size:13px;color:#4a7a9a">⏳</span>`;
 }
 
 // ── JSON-LD Generation — runs after main analysis ────────────
@@ -11483,39 +11643,68 @@ table{table-layout:fixed;width:100%!important;word-break:break-word}
   };
 }
 
+function _dateToSortKey(dateStr) {
+  if (!dateStr) return 99999999;
+  const s = String(dateStr);
+  const mo = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,jan:1,feb:2,mar:3,apr:4,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  let m;
+  m = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (m) return +m[1]*10000 + +m[2]*100 + +m[3];
+  m = s.match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i);
+  if (m) return +m[3]*10000 + (mo[m[1].toLowerCase()]||0)*100 + +m[2];
+  m = s.match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{4})/i);
+  if (m) return +m[2]*10000 + (mo[m[1].toLowerCase()]||0)*100;
+  m = s.match(/\b(\d{4})\b/);
+  if (m) return +m[1]*10000;
+  return 99999999;
+}
+
 function renderTimeline() {
-  const section = document.getElementById('timelineSection');
-  const list    = document.getElementById('timelineList');
+  const section   = document.getElementById('timelineSection');
+  const list      = document.getElementById('timelineList');
+  const evSection = document.getElementById('eventsSection');
+  if (evSection) evSection.style.display = 'none';
   if (!section || !list) return;
-  if (!S.timeline || !S.timeline.length) {
-    section.style.display = 'none';
-    return;
-  }
+
+  // Merge timeline entries and events, sort chronologically
+  const tlEntries = (S.timeline || []).map(e => ({ ...e, _isEvent: false }));
+  const evEntries = (S.events   || []).map(ev => ({
+    date:     ev.date    || '',
+    label:    ev.name    || '',
+    snippet:  [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+    certainty:'event',
+    source:   '',
+    _isEvent: true
+  }));
+  const combined = [...tlEntries, ...evEntries]
+    .sort((a, b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+
+  if (!combined.length) { section.style.display = 'none'; return; }
   section.style.display = '';
   const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // Format source — if it starts with "Item N" make it a clickable link
   const fmtSource = src => {
     if (!src) return '';
     const m = src.match(/^(Item\s+(\d+))(.*)/i);
     if (m) {
       const idx = S.extractedImages.findIndex(img => (img.seqNum || 0) === parseInt(m[2], 10));
       const targetIdx = idx >= 0 ? idx : parseInt(m[2], 10) - 1;
-      return `<a href="javascript:void(0)"
-        onclick="openItemEditModal(${targetIdx})"
-        title="Open Item ${m[2]}"
+      return `<a href="javascript:void(0)" onclick="openItemEditModal(${targetIdx})" title="Open Item ${m[2]}"
         style="color:var(--aml);text-decoration:underline dotted;cursor:pointer;font-size:0.95em">${esc(m[1])} ↗</a>${esc(m[3])}`;
     }
     return esc(src);
   };
 
-  list.innerHTML = S.timeline.map((entry, i) => {
+  list.innerHTML = combined.map((entry, i) => {
     const isInferred = (entry.certainty||'').toLowerCase() === 'inferred';
-    return `<div style="display:flex;gap:0;border-bottom:${i < S.timeline.length-1 ? '1px solid var(--bd)' : 'none'}">
-      <div style="flex-shrink:0;width:120px;padding:9px 10px;font-size:15px;color:${isInferred ? 'var(--txd)' : 'var(--aml)'};border-right:1px solid var(--bd);
+    const isEvent    = !!entry._isEvent;
+    return `<div style="display:flex;gap:0;border-bottom:${i < combined.length-1 ? '1px solid var(--bd)' : 'none'}">
+      <div style="flex-shrink:0;width:120px;padding:9px 10px;font-size:15px;
+                  color:${isInferred ? 'var(--txd)' : 'var(--aml)'};border-right:1px solid var(--bd);
                   font-style:${isInferred ? 'italic' : 'normal'}">
         ${esc(entry.date||'')}
-        ${isInferred ? `<div style="font-size:13px;color:var(--txf);margin-top:2px">inferred</div>` : ''}
+        ${isInferred ? `<div style="font-size:12px;color:var(--txf);margin-top:2px">inferred</div>` : ''}
+        ${isEvent    ? `<div style="font-size:11px;color:var(--txf);margin-top:2px;text-transform:uppercase;letter-spacing:.04em">event</div>` : ''}
       </div>
       <div style="flex:1;padding:9px 12px;min-width:0">
         <div style="font-size:18px;color:var(--tx);font-weight:500;margin-bottom:3px">${esc(entry.label||'')}</div>
@@ -12369,8 +12558,14 @@ function addTag() {
 function removeTag(t){S.tags=S.tags.filter(x=>x!==t);markDirty();renderTags();}
 function renderTags() {
   const el = document.getElementById('tagRow');
-  if (el) el.innerHTML = S.tags.map(t =>
-    `<span class="tag" onclick="removeTag('${esc(t)}')">${esc(t)} ×</span>`).join('');
+  if (el) el.innerHTML = S.tags.map(t => {
+    let clStyle = '';
+    if (S.tagClusters?.length) {
+      const cl = S.tagClusters.find(c => (c.tags||[]).some(ct => ct.toLowerCase() === t.toLowerCase()));
+      if (cl?.color) clStyle = ` style="background:${cl.color}18;color:${cl.color};border:1px solid ${cl.color}40"`;
+    }
+    return `<span class="tag"${clStyle} onclick="removeTag('${esc(t)}')">${esc(t)} ×</span>`;
+  }).join('');
   refreshActionButtons();
 }
 
@@ -12863,17 +13058,26 @@ function openSaveModal() {
       </div>`;
     })() : ''}
 
-    ${r.timeline?.length ? `
-    <div class="pv-section">
-      <div class="pv-section-title">📅 Chronological Timeline</div>
+    ${(r.timeline?.length || r.events?.length) ? (() => {
+      const _evAsTimeline = (r.events||[]).map(ev => ({
+        date: ev.date||'', label: ev.name||'',
+        snippet: [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+        certainty: 'event', source: '', _isEvent: true
+      }));
+      const _merged = [...(r.timeline||[]).map(e=>({...e})), ..._evAsTimeline]
+        .sort((a,b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+      return `<div class="pv-section">
+      <div class="pv-section-title">🕐 Dates & Time References</div>
       <div style="background:#eef5fb;border:1px solid #b0cce0;border-radius:2px;overflow:hidden">
-        ${r.timeline.map((entry, i) => {
+        ${_merged.map((entry, i) => {
           const isInferred = (entry.certainty||'').toLowerCase() === 'inferred';
-          return `<div style="display:flex;gap:0;{i < r.timeline.length-1 ? '1px solid #c8ddef' : 'none'}">
+          const isEvent    = !!entry._isEvent;
+          return `<div style="display:flex;gap:0;border-bottom:${i < _merged.length-1 ? '1px solid #c8ddef' : 'none'}">
             <div style="flex-shrink:0;width:120px;padding:8px 10px;font-size:15px;color:${isInferred ? '#5a7a9a' : '#1a4a8e'};border-right:1px solid #c8ddef;
                         font-style:${isInferred ? 'italic' : 'normal'}">
               ${esc(entry.date||'')}
-              ${isInferred ? '<div style="font-size:13px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isInferred ? '<div style="font-size:12px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isEvent    ? '<div style="font-size:11px;color:#7a9ab8;margin-top:2px;text-transform:uppercase;letter-spacing:.04em">event</div>' : ''}
             </div>
             <div style="flex:1;padding:8px 12px;min-width:0">
               <div style="font-size:18px;color:#1a2e42;font-weight:600;margin-bottom:3px">${esc(entry.label||'')}</div>
@@ -12882,7 +13086,8 @@ function openSaveModal() {
           </div>`;
         }).join('')}
       </div>
-    </div>` : ''}
+    </div>`;
+    })() : ''}
 
     ${r.publisherSummary?.length ? `
     <div class="pv-section">
@@ -12997,7 +13202,6 @@ function continueEditing() {
   S._corrections  = a.corrections  || '';
 
   S.tags = Array.isArray(a.tags) ? [...a.tags] : [];
-  renderTags();
 
   S.citations = (Array.isArray(a.citations) ? a.citations : []).map(text => ({
     id: ++S.citSeq, text
@@ -13009,6 +13213,7 @@ function continueEditing() {
   S.structuredAnalysis  = record.structuredAnalysis  || '';
   S.tagClusters         = record.tagClusters         || null;
   S.tagDiagram          = record.tagDiagram          || '';
+  renderTags(); // after tagClusters so colors are applied
   S.timeline          = Array.isArray(record.timeline) ? record.timeline : [];
   S.publisherSummary  = Array.isArray(record.publisherSummary) ? record.publisherSummary : [];
   S.profiles          = Array.isArray(record.profiles) ? record.profiles : [];
@@ -13022,7 +13227,7 @@ function continueEditing() {
   // Re-enable Analysis/Conflicts tabs based on loaded record data
   const _jtbL = document.getElementById('jsonldTabBtn');
   const _ctbL = document.getElementById('conflictsTabBtn');
-  if (_jtbL) _jtbL.disabled = !record.jsonLD;
+  if (_jtbL) _jtbL.disabled = false;
   if (_ctbL) _ctbL.disabled = false;
   S.lastConflictAt    = record.lastConflictAt || null;
   S.lastGenerateAt    = record.lastGenerateAt || null;
@@ -13228,6 +13433,10 @@ function renderSavedList(records) {
           ${dirtyBadge}
         </div>
         <div class="smeta" style="margin-bottom:3px">${r.updatedAt ? 'Updated ' + new Date(r.updatedAt).toLocaleString() : (date ? 'Saved ' + date : '')}</div>
+        ${r.savedFilename ? `<div style="font-size:13px;color:var(--txf);
+                                         margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;
+                                         white-space:nowrap"
+             title="${esc(r.savedFilename)}">📄 ${esc(r.savedFilename)}</div>` : ''}
         <div style="font-size:14px;color:var(--txf)">
           ${objCount} object${objCount!==1?'s':''} · ${(r.extractedText||'').split(/\s+/).filter(Boolean).length} words
         </div>
@@ -13451,17 +13660,26 @@ function openSaveModalFromRecord(r) {
       </div>`;
     })() : ''}
 
-    ${r.timeline?.length ? `
-    <div class="pv-section">
-      <div class="pv-section-title">📅 Chronological Timeline</div>
+    ${(r.timeline?.length || r.events?.length) ? (() => {
+      const _evAsTimeline = (r.events||[]).map(ev => ({
+        date: ev.date||'', label: ev.name||'',
+        snippet: [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+        certainty: 'event', source: '', _isEvent: true
+      }));
+      const _merged = [...(r.timeline||[]).map(e=>({...e})), ..._evAsTimeline]
+        .sort((a,b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+      return `<div class="pv-section">
+      <div class="pv-section-title">🕐 Dates & Time References</div>
       <div style="background:#eef5fb;border:1px solid #b0cce0;border-radius:2px;overflow:hidden">
-        ${r.timeline.map((entry, i) => {
+        ${_merged.map((entry, i) => {
           const isInferred = (entry.certainty||'').toLowerCase() === 'inferred';
-          return `<div style="display:flex;gap:0;{i < r.timeline.length-1 ? '1px solid #c8ddef' : 'none'}">
+          const isEvent    = !!entry._isEvent;
+          return `<div style="display:flex;gap:0;border-bottom:${i < _merged.length-1 ? '1px solid #c8ddef' : 'none'}">
             <div style="flex-shrink:0;width:120px;padding:8px 10px;font-size:15px;color:${isInferred ? '#5a7a9a' : '#1a4a8e'};border-right:1px solid #c8ddef;
                         font-style:${isInferred ? 'italic' : 'normal'}">
               ${esc(entry.date||'')}
-              ${isInferred ? '<div style="font-size:13px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isInferred ? '<div style="font-size:12px;color:#7a9ab8;margin-top:2px">inferred</div>' : ''}
+              ${isEvent    ? '<div style="font-size:11px;color:#7a9ab8;margin-top:2px;text-transform:uppercase;letter-spacing:.04em">event</div>' : ''}
             </div>
             <div style="flex:1;padding:8px 12px;min-width:0">
               <div style="font-size:18px;color:#1a2e42;font-weight:600;margin-bottom:3px">${esc(entry.label||'')}</div>
@@ -13470,7 +13688,8 @@ function openSaveModalFromRecord(r) {
           </div>`;
         }).join('')}
       </div>
-    </div>` : ''}
+    </div>`;
+    })() : ''}
 
     ${r.publisherSummary?.length ? `
     <div class="pv-section">
@@ -13749,15 +13968,14 @@ function buildPrintHtml(r, forPane=false) {
   function _tagCluster(tag) {
     // Use AI-generated clusters when available
     if (r.tagClusters && r.tagClusters.length) {
+      const norm = tag.trim().toLowerCase();
       for (const cl of r.tagClusters) {
-        if ((cl.tags||[]).some(t => t.toLowerCase() === tag.toLowerCase())) {
-          // Derive a light bg from the color
-          return { color: cl.color, bg: cl.color + '18', name: cl.name };
+        if ((cl.tags||[]).some(t => t.trim().toLowerCase() === norm)) {
+          return { color: cl.color, bg: cl.color + '33', name: cl.name };
         }
       }
     }
-    // Fallback — unclustered tags get white
-    return { color: '#555', bg: '#fff' };
+    return null; // no cluster — let CSS class handle styling
   }
 
   // Build a single lowercase text blob from all items for tag frequency counting
@@ -13772,12 +13990,12 @@ function buildPrintHtml(r, forPane=false) {
         while ((pos = _allItemText.indexOf(tl, pos)) !== -1) { count++; pos += tl.length; }
         const cl = _tagCluster(t);
         const badge = count > 1
-          ? `<span style="display:inline-block;background:${cl.color};
+          ? `<span style="display:inline-block;background:${cl ? e(cl.color) : '#888'};
                           color:#fff;font-size:6.5pt;font-weight:700;padding:0 4pt;
                           border-radius:8pt;margin-left:3pt;vertical-align:middle">${count}</span>`
           : '';
-        return `<span class="tag" style="background:${cl.bg};color:${cl.color};
-                  border:1px solid ${cl.color}40">${e(t)}${badge}</span>`;
+        const clStyle = cl ? ` style="background:${e(cl.bg)};color:${e(cl.color)};border:1px solid ${e(cl.color)}40"` : '';
+        return `<span class="tag"${clStyle}>${e(t)}${badge}</span>`;
       }).join('')}</div>
       ${r.tagClusters && r.tagClusters.length ? `<div style="display:flex;gap:10pt;flex-wrap:wrap;margin-top:8pt;padding-top:6pt;border-top:1px solid #dde5ef">
         ${r.tagClusters.map(cl => `<span style="display:flex;align-items:center;gap:5pt;font-size:7pt;color:#555">
@@ -13809,42 +14027,47 @@ function buildPrintHtml(r, forPane=false) {
                          img.isPartOf?.datePublished, img.isPartOf?.pagination]
                         .filter(Boolean).join(' · ');
         const wci = imgText.split(/\s+/).filter(Boolean).length;
+        const hasSig = !!img.significance;
         return `
-        <div class="img-card" style="break-inside:avoid;display:inline-block;width:100%;
+        <div class="img-card${hasSig ? ' img-card-has-sig' : ''}" style="break-inside:avoid;display:inline-block;width:100%;
              border:1px solid #cdd8e8;border-radius:4px;overflow:hidden;
              background:#f8fafc;margin-bottom:14pt;
              box-shadow:0 1px 3px rgba(28,35,48,.06)">
           <div style="background:#1a4a8e;color:#e6c84a;font-size:7.5pt;font-weight:700;letter-spacing:.1em;padding:3pt 10pt;
                text-transform:uppercase">Item ${seqNum}</div>
-          <div style="display:grid;grid-template-columns:${isTextOnly ? '1fr' : '140pt 1fr'};
-               gap:0;min-height:0">
-            ${isTextOnly ? '' : `
-            <div style="background:#f0f4f9;border-right:1px solid #dde5ef;
-                        display:flex;align-items:flex-start;justify-content:center;
-                        padding:8pt;box-sizing:border-box;overflow:hidden">
-              <img src="${img.contentUrl||img.dataURL||''}"
-                   alt="${e(img.caption || img.name || '')}"
-                   style="width:100%;height:auto;max-height:200pt;object-fit:contain;display:block">
-            </div>`}
-            <div style="padding:8pt 10pt;display:flex;flex-direction:column;gap:4pt">
-              <div style="font-weight:700;font-size:8.4pt;color:#1a2332;line-height:1.4">
-                ${e(img.caption || img.name || '')}
+          <div class="img-card-row">
+            <div class="img-card-main">
+              <div style="display:grid;grid-template-columns:${isTextOnly ? '1fr' : '140pt 1fr'};
+                   gap:0;min-height:0">
+                ${isTextOnly ? '' : `
+                <div style="background:#f0f4f9;border-right:1px solid #dde5ef;
+                            display:flex;align-items:flex-start;justify-content:center;
+                            padding:8pt;box-sizing:border-box;overflow:hidden">
+                  <img src="${img.contentUrl||img.dataURL||''}"
+                       alt="${e(img.caption || img.name || '')}"
+                       style="width:100%;height:auto;max-height:200pt;object-fit:contain;display:block">
+                </div>`}
+                <div style="padding:8pt 10pt;display:flex;flex-direction:column;gap:4pt">
+                  <div style="font-weight:700;font-size: 9pt;color:#1a2332;line-height:1.4">
+                    ${e(img.caption || img.name || '')}
+                  </div>
+                  ${citLine ? `<div style="font-size:7.8pt;color:#4a9ede">${e(citLine)}</div>` : ''}
+                  ${wci ? `<div style="font-size:7.5pt;color:#9aafc4">${wci} words</div>` : ''}
+                  ${imgText ? `
+                  <div style="margin-top:6pt;border-top:1px solid #dde5ef;padding-top:6pt">
+                    <div class="item-text-body" style="font-size:10pt;
+                                line-height:1.7;color:#2a3a4a;white-space:pre-wrap">${e(imgText)}</div>
+                  </div>` : ''}
+                </div>
               </div>
-              ${citLine ? `<div style="font-size:7.8pt;color:#4a9ede">${e(citLine)}</div>` : ''}
-              ${wci ? `<div style="font-size:7.5pt;color:#9aafc4">${wci} words</div>` : ''}
-              ${imgText ? `
-              <div style="margin-top:6pt;border-top:1px solid #dde5ef;padding-top:6pt">
-                <div class="item-text-body" style="font-size:10pt;
-                            line-height:1.7;color:#2a3a4a;white-space:pre-wrap">${e(imgText)}</div>
-              </div>` : ''}
-              ${img.significance ? `
-              <div style="margin-top:6pt;border-top:1px solid #dde5ef;padding-top:6pt;
-                          display:flex;gap:5pt;align-items:flex-start">
-                <span style="color:#c8920a;font-size:9pt;flex-shrink:0;margin-top:1pt">✦</span>
-                <div style="font-size:8.4pt;color:#5a4a1a;line-height:1.6;
-                            font-style:italic">${e(img.significance)}</div>
-              </div>` : ''}
             </div>
+            ${hasSig ? `
+            <div class="img-card-sig" style="padding:8pt 10pt;border-top:1px solid #dde5ef;
+                        display:flex;gap:5pt;align-items:flex-start">
+              <span style="color:#c8920a;font-size:9pt;flex-shrink:0;margin-top:1pt">✦</span>
+              <div style="font-size: 9pt;color:#5a4a1a;line-height:1.6;
+                          font-style:italic">${e(img.significance)}</div>
+            </div>` : ''}
           </div>
         </div>`;
       }).join('') : '';
@@ -13939,7 +14162,7 @@ function buildPrintHtml(r, forPane=false) {
           </div>
           <!-- Body -->
           <div style="padding:10pt 12pt">
-            ${p.description ? `<p style="font-size:8.4pt;line-height:1.7;color:#3a5878;margin:0 0 8pt">${e(p.description)}</p>` : ''}
+            ${p.description ? `<p style="font-size: 9pt;line-height:1.7;color:#3a5878;margin:0 0 8pt">${e(p.description)}</p>` : ''}
             ${rels ? `<div style="font-size:7.8pt;color:#7ca8c4;font-style:italic;
                           padding:5pt 8pt;background:#f8fafc;border-radius:3pt;
                           border-left:2pt solid ${c.rule};margin-bottom:7pt">
@@ -13953,7 +14176,7 @@ function buildPrintHtml(r, forPane=false) {
                 <div style="font-size:7pt;
                             text-transform:uppercase;letter-spacing:.09em;
                             color:${c.rule};margin-bottom:2pt">${e(ap.name)}</div>
-                <div style="font-size:8.4pt;color:#3a5878;line-height:1.6">${e(ap.value)}</div>
+                <div style="font-size: 9pt;color:#3a5878;line-height:1.6">${e(ap.value)}</div>
               </div>`).join('')}
           </div>
         </div>`;
@@ -13979,7 +14202,7 @@ function buildPrintHtml(r, forPane=false) {
     ldHtml = `
       ${gpsRows}
       ${parts.length ? `
-      <div style="font-size:8.4pt;color:#4a9ede;
+      <div style="font-size: 9pt;color:#4a9ede;
                   text-transform:uppercase;letter-spacing:.08em;margin:10pt 0 8pt">
         Documented Entities (${parts.length})
       </div>
@@ -14313,10 +14536,6 @@ function buildPrintHtml(r, forPane=false) {
 
   @media (min-width: 1000px) {
     .ha-columns { column-count: 3; }
-    .item-text-body {
-      columns: 2;
-      column-gap: 14pt;
-    }
     .masonry {
       columns: 3;
       column-gap: 12pt;
@@ -14346,7 +14565,7 @@ function buildPrintHtml(r, forPane=false) {
     .timeline-table tr       { display: block; margin-bottom: 10pt;
                                border: 1px solid #dde5ef; border-radius: 2pt;
                                background: #fff; padding: 8pt 10pt; }
-    .timeline-table td       { display: block; font-size: 8.4pt; line-height: 1.55;
+    .timeline-table td       { display: block; font-size: 9pt; line-height: 1.55;
                                padding: 2pt 0; border: none; white-space: normal; }
     .timeline-table td::before { font-size: 7.5pt; color: #7ca8c4;
                                text-transform: uppercase; letter-spacing: .06em;
@@ -14364,7 +14583,7 @@ function buildPrintHtml(r, forPane=false) {
     .persons-table tr        { display: block; margin-bottom: 10pt;
                                border: 1px solid #dde5ef; border-radius: 2pt;
                                background: #fff; padding: 8pt 10pt; }
-    .persons-table td        { display: block; font-size: 8.4pt; line-height: 1.55;
+    .persons-table td        { display: block; font-size: 9pt; line-height: 1.55;
                                padding: 2pt 0; border: none; }
     .persons-table td::before { font-size: 7.5pt; color: #7ca8c4;
                                text-transform: uppercase; letter-spacing: .06em;
@@ -14414,7 +14633,7 @@ function buildPrintHtml(r, forPane=false) {
     padding: 17.4pt 23.2pt; margin-bottom: 20.3pt;
   }
   .doc-header .record-id {
-    font-size: 8.4pt; color: #7ca8c4;
+    font-size: 9pt; color: #7ca8c4;
   }
 
   /* layout — simple single column, no CSS columns to avoid bleed */
@@ -14461,7 +14680,7 @@ function buildPrintHtml(r, forPane=false) {
   .meta-table { width: 100%; border-collapse: collapse; font-size: 8.3pt; }
   .meta-table th {
     font-weight: 400;
-    font-size: 8.4pt; text-transform: uppercase; letter-spacing: .06em;
+    font-size: 9pt; text-transform: uppercase; letter-spacing: .06em;
     color: #7ca8c4; width: 34%; vertical-align: top; text-align: left;
     padding: 4.3pt 11.6pt 4.3pt 0; white-space: nowrap;
   }
@@ -14473,7 +14692,7 @@ function buildPrintHtml(r, forPane=false) {
   /* tags */
   .tags { display: flex; flex-wrap: wrap; gap: 5.8pt; margin-top: 2.9pt; }
   .tag {
-    font-size: 8.4pt;
+    font-size: 9pt;
     padding: 2.2pt 8.7pt; border: 1px solid #b8c8da;
     background: #edf2f8; color: #3a5878; border-radius: 2px;
   }
@@ -14563,11 +14782,11 @@ function buildPrintHtml(r, forPane=false) {
     font-family: 'Playfair Display', Georgia, serif; font-size: 10.4pt;
     font-weight: 600; color: #1a2332; margin-bottom: 4.3pt;
   }
-  .entity-detail { font-size: 8.4pt; color: #4a9ede; margin-bottom: 2.9pt; }
-  .entity-desc  { font-size: 8.4pt; color: #3a5878; margin-bottom: 4.3pt; line-height: 1.5; }
-  .entity-rels  { font-size: 8.4pt; color: #7ca8c4; margin-bottom: 4.3pt; }
+  .entity-detail { font-size: 9pt; color: #4a9ede; margin-bottom: 2.9pt; }
+  .entity-desc  { font-size: 9pt; color: #3a5878; margin-bottom: 4.3pt; line-height: 1.5; }
+  .entity-rels  { font-size: 9pt; color: #7ca8c4; margin-bottom: 4.3pt; }
   .entity-prop  {
-    font-size: 8.4pt; color: #3a5878; margin-top: 5.8pt;
+    font-size: 9pt; color: #3a5878; margin-top: 5.8pt;
     padding-left: 11.6pt; border-left: 2px solid #dde5ef; line-height: 1.5;
   }
   .entity-prop strong { color: #b8920a; font-size: 7.8pt; }
@@ -14579,7 +14798,7 @@ function buildPrintHtml(r, forPane=false) {
   }
   .gps-block.warn { border-color: #e6c84a; background: #fffdf0; }
   .gps-title {
-    font-size: 8.4pt;
+    font-size: 9pt;
     color: #4a9ede; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8.7pt;
   }
   .gps-block.warn .gps-title { color: #b8920a; }
@@ -14599,6 +14818,19 @@ function buildPrintHtml(r, forPane=false) {
     margin-top: 29pt; padding-top: 11.6pt; border-top: 1px solid #cdd8e8;
     font-size: 7.8pt;
     color: #000; text-align: left;
+  }
+
+  /* Sources / item-card 2-column layout at >800px when Research Significance exists.
+     Matches the Listing-tab item layout in the live app. */
+  @media screen and (min-width: 801px) {
+    .img-card-has-sig .img-card-row {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+    }
+    .img-card-has-sig .img-card-sig {
+      border-top: none !important;
+      border-left: 1px solid #dde5ef;
+    }
   }
 
   @media print {
@@ -14935,6 +15167,24 @@ ${r.structuredAnalysis ? `
     });
     if (cur) sections.push(cur);
 
+    // Merge Events section into Dates & Time References, sorted chronologically
+    (function() {
+      var evIdx    = -1, datesIdx = -1;
+      sections.forEach(function(s, i) {
+        if (/📅.*events|^events$/i.test((s.head||'').replace(/<[^>]+>/g,''))) evIdx    = i;
+        if (/🕐|dates.*time|time.*references/i.test((s.head||'').replace(/<[^>]+>/g,'')))  datesIdx = i;
+      });
+      if (evIdx < 0 || datesIdx < 0) return;
+      var evBullets = sections[evIdx].lines.filter(function(l){ return /^[-*•] /.test(l); });
+      var datesSec  = sections[datesIdx];
+      var datesBullets = datesSec.lines.filter(function(l){ return /^[-*•] /.test(l); });
+      var nonBullets   = datesSec.lines.filter(function(l){ return !/^[-*•] /.test(l); });
+      var merged = evBullets.concat(datesBullets);
+      merged.sort(function(a, b) { return _dateToSortKey(a) - _dateToSortKey(b); });
+      datesSec.lines = nonBullets.concat(merged);
+      sections.splice(evIdx, 1);
+    })();
+
     // Render each section as a card body
     function renderLines(lns) {
       var out = '', i = 0;
@@ -14987,25 +15237,7 @@ ${r.structuredAnalysis ? `
         if (isDates) {
           var timelineItems = s.lines.filter(function(l){ return /^[-*\u2022] /.test(l); });
           if (timelineItems.length) {
-            // Sort ascending chronologically by extracting year/date from each item
-            function extractSortKey(line) {
-              var text = line.replace(/^[-*\u2022] /,'');
-              // Try YYYY-MM-DD or YYYY/MM/DD
-              var m = text.match(/\b(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\b/);
-              if (m) return parseInt(m[1])*10000 + parseInt(m[2])*100 + parseInt(m[3]);
-              // Try "Month DD, YYYY" or "Month YYYY"
-              var months = {january:1,february:2,march:3,april:4,may:5,june:6,
-                            july:7,august:8,september:9,october:10,november:11,december:12};
-              var m2 = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/i);
-              if (m2) return parseInt(m2[3])*10000 + (months[m2[1].toLowerCase()]||0)*100 + parseInt(m2[2]);
-              var m3 = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})\b/i);
-              if (m3) return parseInt(m3[2])*10000 + (months[m3[1].toLowerCase()]||0)*100;
-              // Try bare YYYY
-              var m4 = text.match(/\b(\d{4})\b/);
-              if (m4) return parseInt(m4[1])*10000;
-              return 0;
-            }
-            timelineItems.sort(function(a, b){ return extractSortKey(a) - extractSortKey(b); });
+            timelineItems.sort(function(a, b){ return _dateToSortKey(a) - _dateToSortKey(b); });
             bodyHtml = '<div style="position:relative;padding-left:18pt">'
               + '<div style="position:absolute;left:6pt;top:4pt;bottom:4pt;width:2pt;background:#c8d8e8;border-radius:1pt"></div>'
               + timelineItems.map(function(l) {
@@ -15098,7 +15330,7 @@ ${r.structuredAnalysis ? `
   ${a.corrections ? `
   <div class="card accent-slate">
     <div class="card-title slate">Conflict Resolution</div>
-    <pre class="extracted-text" style="font-size:8.4pt">${e(a.corrections)}</pre>
+    <pre class="extracted-text" style="font-size: 9pt">${e(a.corrections)}</pre>
   </div>` : ''}
 
   ${citsHtml ? `
@@ -15129,26 +15361,26 @@ ${r.gpsConflicts?.conflicts?.length ? (() => {
   };
   return `<div class="card full-width" style="margin-top:14pt;border-left:4px solid #c84444">
   <div class="card-title" style="color:#8a2020">GPS-4 Conflicting Evidence · ${conflicts.length} found · ${resolvedCount} resolved</div>
-  <p style="font-size:8.4pt;color:#3a5878;margin-bottom:8pt">${e(r.gpsConflicts.summary||'')}</p>
+  <p style="font-size: 9pt;color:#3a5878;margin-bottom:8pt">${e(r.gpsConflicts.summary||'')}</p>
   ${conflicts.map((c,i) => `
   <div style="margin-bottom:8pt;padding:7pt 9pt;border:1pt solid ${c.resolved?'#3dba72':'#e8c0b0'};
        background:${c.resolved?'rgba(61,186,114,.05)':'rgba(224,85,85,.04)'};border-radius:2pt">
-    <div style="font-size:8.4pt;margin-bottom:4pt">
+    <div style="font-size: 9pt;margin-bottom:4pt">
       <strong style="color:${c.resolved?'#1a6a40':'#8a2020'}">${i+1}. ${e(c.subject)}</strong>
       ${c.resolved?'<span style="color:#1a8a40;font-weight:700"> ✔ Resolved</span>':''}
       <span style="color:#888;margin-left:6pt">[${(c.severity||'').toUpperCase()}]</span>
     </div>
     <div style="display:flex;gap:8pt;margin-bottom:4pt">
-      <div style="flex:1;font-size:8.4pt;color:#3a3030"><em>A:</em> ${linkStmt(c.item1)}</div>
-      <div style="flex:1;font-size:8.4pt;color:#3a3030"><em>B:</em> ${linkStmt(c.item2)}</div>
+      <div style="flex:1;font-size: 9pt;color:#3a3030"><em>A:</em> ${linkStmt(c.item1)}</div>
+      <div style="flex:1;font-size: 9pt;color:#3a3030"><em>B:</em> ${linkStmt(c.item2)}</div>
     </div>
-    <div style="font-size:8.4pt;color:#555;font-style:italic">${e(c.explanation)}</div>
+    <div style="font-size: 9pt;color:#555;font-style:italic">${e(c.explanation)}</div>
     ${c.resolved && c.resolution ? `
     <div style="margin-top:6pt;padding:5pt 8pt;background:rgba(61,186,114,.06);
          border:1pt solid rgba(61,186,114,.3);border-radius:2pt">
       <div style="font-size:7.8pt;color:#1a6a40;
            text-transform:uppercase;letter-spacing:.07em;margin-bottom:3pt">✔ Accepted Resolution</div>
-      <div style="font-size:8.4pt;color:#1a3030;line-height:1.55">${e(c.resolution)}</div>
+      <div style="font-size: 9pt;color:#1a3030;line-height:1.55">${e(c.resolution)}</div>
     </div>` : ''}
   </div>`).join('')}
 </div>`;
@@ -15308,8 +15540,18 @@ ${(() => {
       const idx = cap.toLowerCase().indexOf('photo of ');
       const subject = idx >= 0 ? cap.substring(idx + 9).trim() : cap;
       const src = img.dataURL || img.contentUrl || '';
+      const seqNum = img.seqNum;
+      // Wire up read-only item viewer (calls existing openItem) only when we have a seqNum
+      const clickAttrs = seqNum
+        ? `onclick="openItem(${seqNum})" role="button" tabindex="0" `
+          + `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openItem(${seqNum})}" `
+          + `onmouseover="this.style.transform='translateY(-2pt)'" `
+          + `onmouseout="this.style.transform=''" `
+          + `title="View item details"`
+        : '';
+      const clickStyle = seqNum ? 'cursor:pointer;transition:transform .15s;' : '';
       return `
-    <div style="text-align:center;break-inside:avoid">
+    <div ${clickAttrs} style="${clickStyle}text-align:center;break-inside:avoid">
       ${src ? `<div style="width:100%;padding-bottom:100%;position:relative;
                            border-radius:3pt;overflow:hidden;border:1px solid #cdd8e8;
                            box-shadow:0 2pt 6pt rgba(28,35,48,.1)">
@@ -15398,7 +15640,7 @@ ${r.profiles?.length ? `
       </div>` : ''}
       <!-- Summary body -->
       <div style="padding:12pt 16pt">
-        <div style="font-size:8.4pt;line-height:1.75;color:#3a5878;font-style:italic">
+        <div style="font-size: 9pt;line-height:1.75;color:#3a5878;font-style:italic">
           ${e(p.summary||'')}
         </div>
       </div>
@@ -15410,7 +15652,7 @@ ${r.profiles?.length ? `
 ${r.persons?.length ? `
 <div class="card full-width" style="margin-top:14pt">
   <div class="card-title">👤 Persons (${r.persons.length})</div>
-  <table class="persons-table" style="width:100%;border-collapse:collapse;font-size:8.4pt">
+  <table class="persons-table" style="width:100%;border-collapse:collapse;font-size: 9pt">
     <thead>
       <tr style="background:#f0f4f9;">
         <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Name</th>
@@ -15485,10 +15727,17 @@ ${r.alternativeNames?.length ? `
   </div>
 </div>` : ''}
 
-${r.timeline?.length ? `
-<div class="card full-width" style="margin-top:14pt">
-  <div class="card-title">📅 Chronological Timeline</div>
-  <table class="timeline-table" style="width:100%;border-collapse:collapse;font-size:8.4pt;table-layout:fixed">
+${(r.timeline?.length || r.events?.length) ? (() => {
+  const _evRows = (r.events||[]).map(ev => ({
+    date: ev.date||'', label: ev.name||'',
+    snippet: [ev.summary, ev.location && `📍 ${ev.location}`, ev.persons && `👤 ${ev.persons}`].filter(Boolean).join('  ·  '),
+    certainty: 'event', source: '', _isEvent: true
+  }));
+  const _merged = [...(r.timeline||[]).map(entry=>({...entry})), ..._evRows]
+    .sort((a,b) => _dateToSortKey(a.date) - _dateToSortKey(b.date));
+  return `<div class="card full-width" style="margin-top:14pt">
+  <div class="card-title">🕐 Dates & Time References</div>
+  <table class="timeline-table" style="width:100%;border-collapse:collapse;font-size: 9pt;table-layout:fixed">
     <colgroup>
       <col style="width:80pt">
       <col style="width:16%">
@@ -15500,16 +15749,18 @@ ${r.timeline?.length ? `
       <tr style="background:#f0f4f9;">
         <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600;white-space:nowrap">Date</th>
         <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Label</th>
-        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Snippet</th>
-        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600;white-space:nowrap">Certainty</th>
+        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Details</th>
+        <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600;white-space:nowrap">Type</th>
         <th style="padding:6pt 8pt;text-align:left;color:#1a4a8e;font-weight:600">Source</th>
       </tr>
     </thead>
     <tbody>
-      ${r.timeline.map((entry, i) => {
-        const isInf = (entry.certainty||'').toLowerCase() === 'inferred';
+      ${_merged.map((entry, i) => {
+        const isInf   = (entry.certainty||'').toLowerCase() === 'inferred';
+        const isEvent = !!entry._isEvent;
         const bg = i % 2 === 0 ? '#fff' : '#f8fafc';
-
+        const typeLabel = isEvent ? 'Event' : isInf ? 'Inferred' : e(entry.certainty||'');
+        const typeColor = isEvent ? '#6a4a9e' : isInf ? '#c84444' : '#2a8a55';
         return `<tr style="background:${bg}">
           <td style="padding:5pt 8pt;vertical-align:top;font-size:10pt;
                color:${isInf?'#7a9ab8':'#1a4a8e'};font-style:${isInf?'italic':'normal'};white-space:nowrap">${e(entry.date||'')}</td>
@@ -15517,15 +15768,16 @@ ${r.timeline?.length ? `
                overflow:hidden;text-overflow:ellipsis">${e(entry.label||'')}</td>
           <td style="padding:5pt 8pt;vertical-align:top;font-size:10pt;color:#3a5878;line-height:1.5;
                word-break:break-word">${e(entry.snippet||'')}</td>
-          <td style="padding:5pt 8pt;vertical-align:top;font-size:7.8pt;
-               color:${isInf?'#c84444':'#2a8a55'};overflow:hidden;text-overflow:ellipsis">${e(entry.certainty||'')}</td>
+          <td style="padding:5pt 8pt;vertical-align:top;font-size:7.8pt;color:${typeColor};
+               overflow:hidden;text-overflow:ellipsis">${typeLabel}</td>
           <td style="padding:5pt 8pt;vertical-align:top;font-size:10pt;color:#666;font-style:italic;
                word-break:break-word">${e(entry.source||'')}</td>
         </tr>`;
       }).join('')}
     </tbody>
   </table>
-</div>` : ''}
+</div>`;
+})() : ''}
 
 ${r.publisherSummary?.length ? `
 <div class="card full-width" style="margin-top:14pt">
@@ -15991,7 +16243,7 @@ function resetForNext() {
   document.getElementById('jsonldTabBtn').textContent = 'Analysis';
   const _cTabReset = document.getElementById('conflictsTabBtn');
   if (_cTabReset) { _cTabReset.disabled = true; }
-  document.getElementById('jsonldTabBtn').disabled = true;
+  // Analysis tab never disabled
   document.getElementById('btnRegenLD').disabled = true;
   // Re-evaluate tab state based on actual item count (may have items if called mid-session)
   setTimeout(refreshGenerateBtn, 0);
