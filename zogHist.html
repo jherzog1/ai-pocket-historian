@@ -485,6 +485,10 @@ html,body{height:100%;height:100dvh;overflow:hidden;background:var(--bg);color:v
   border-color: var(--am);
   box-shadow: 0 0 0 1px var(--am), 0 2px 12px rgba(0,0,0,.25);
 }
+.ei-accordion:nth-child(even)                   { background:var(--s2); }
+.ei-accordion:nth-child(even) .ei-card-grid     { background:var(--s2); }
+.ei-accordion:nth-child(even) .ei-sig-desktop   { background:var(--s3); }
+.ei-accordion:nth-child(odd)  .ei-sig-desktop   { background:var(--s2); }
 .ei-accordion .ei-header:hover { background:var(--s2); }
 .ei-accordion .ei-header:active { background:var(--s3); }
 .ei-accordion .ei-header { box-sizing:border-box; }
@@ -3558,16 +3562,15 @@ function refreshSourceTabButtons() {
 
   // Analysis tab — checkmark if analysis has been run
   const analysisTab = document.getElementById('jsonldTabBtn');
-  if (analysisTab) {
+  if (analysisTab && !_scanInProgress) {
     const hasAnalysis = !!(S.lastGenerateAt || S.events?.length || S.themes?.length);
-    const isOnA = analysisTab.classList.contains('on');
     const label = hasAnalysis
       ? `Analysis <span class="src-count" style="display:inline-block;font-size:10px;
           font-weight:800;padding:0 5px;border-radius:8px;line-height:16px;
           vertical-align:middle;margin-left:2px">✓</span>`
       : 'Analysis';
-    // Only update if not mid-scan (avoids overwriting "Running…" text)
-    if (!_scanInProgress) analysisTab.innerHTML = label;
+    analysisTab.innerHTML = label;
+    analysisTab.onclick = function() { showTab('jsonld', this); };
   }
   const chatTab = document.getElementById('queryTabBtn');
   if (chatTab) {
@@ -8197,7 +8200,7 @@ function renderExtractedImages() {
             <span style="font-size:13px;font-weight:700;color:var(--aml);flex-shrink:0">
               Item ${itemNum}${_editedItems.has(i) ? ' <span style="color:var(--am);font-size:18px;line-height:1" title="Edited">●</span>' : ''}</span>
             <span id="eiLabel-${i}" style="font-size:17px;color:var(--tx);
-                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600">
+                  word-break:break-word;font-weight:600">
               ${esc(caption || (img.isTextOnly ? 'Text Only' : 'No caption'))}</span>
           </div>
           <div style="font-size:13px;color:var(--txf);display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
@@ -8221,8 +8224,7 @@ function renderExtractedImages() {
 
         <!-- Column 3: Research significance — desktop only -->
         <div class="ei-sig-desktop" style="min-width:0;overflow:hidden;flex-shrink:0;padding:8px 10px;
-                    border-left:1px solid var(--bd);background:var(--s2);
-                    ${img.significance ? 'border-left:3px solid var(--am)' : ''}">
+                    background:var(--s2)">
           ${img.significance
             ? `<div style="font-size:10px;color:var(--am);text-transform:uppercase;
                            letter-spacing:.07em;font-weight:700;margin-bottom:5px">✦ Research Significance</div>
@@ -10207,7 +10209,7 @@ function _loadRecordIntoSessionWork(record) {
   // Re-enable Analysis/Conflicts tabs based on loaded record data
   const _jtbL = document.getElementById('jsonldTabBtn');
   const _ctbL = document.getElementById('conflictsTabBtn');
-  if (_jtbL) _jtbL.disabled = !record.jsonLD;
+  // Analysis tab always enabled
   if (_ctbL) _ctbL.disabled = false;
   S.lastConflictAt    = record.lastConflictAt || null;
   S.lastGenerateAt      = record.lastGenerateAt || null;
@@ -13078,7 +13080,7 @@ async function confirmSave() {
   // Re-enable Analysis and Conflicts tabs if analysis has been run
   const _jtb = document.getElementById('jsonldTabBtn');
   const _ctb = document.getElementById('conflictsTabBtn');
-  if (_jtb && null) _jtb.disabled = false;
+  // Analysis tab always enabled
   if (_ctb) _ctb.disabled = false;
 
   setStatus('ok', `Record saved`);
